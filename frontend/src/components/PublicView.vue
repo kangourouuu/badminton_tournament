@@ -22,79 +22,87 @@ onMounted(loadData);
 </script>
 
 <template>
-  <div class="min-h-screen bg-background">
-    <div
-      class="bg-primary text-white py-12 px-6 text-center mb-8 relative overflow-hidden"
-    >
-      <h1 class="text-4xl font-bold font-sans tracking-tight relative z-10">
-        Badminton Tournament
-      </h1>
-      <div class="flex justify-center gap-4 mt-8 relative z-10">
-        <button
-          @click="switchPool('Mesoneer')"
-          :class="[
-            'px-6 py-2 rounded-full font-bold transition-all',
-            activePool === 'Mesoneer'
-              ? 'bg-white text-primary'
-              : 'bg-primary/50 text-white hover:bg-white/20',
-          ]"
-        >
-          Mesoneer Pool
-        </button>
-        <button
-          @click="switchPool('Lab')"
-          :class="[
-            'px-6 py-2 rounded-full font-bold transition-all',
-            activePool === 'Lab'
-              ? 'bg-white text-primary'
-              : 'bg-primary/50 text-white hover:bg-white/20',
-          ]"
-        >
-          Lab Pool
-        </button>
-      </div>
-
-      <!-- Decoration -->
-      <div
-        class="absolute top-0 opacity-10 w-full h-full left-0 pointer-events-none"
+  <div>
+    <!-- Pool Toggles (Segmented Control) -->
+    <div class="mb-8 flex gap-2">
+      <button
+        @click="switchPool('Mesoneer')"
+        :class="[
+          'rounded-sm px-6 py-2 font-medium transition-colors shadow-none text-sm',
+          activePool === 'Mesoneer'
+            ? 'bg-violet-600 text-white'
+            : 'bg-white border border-purple-200 text-purple-700 hover:bg-purple-50',
+        ]"
       >
-        <div
-          class="absolute -right-20 -top-20 w-96 h-96 bg-white rounded-full"
-        ></div>
-        <div
-          class="absolute -left-20 bottom-0 w-64 h-64 bg-white rounded-full"
-        ></div>
-      </div>
+        Mesoneer Pool
+      </button>
+      <button
+        @click="switchPool('Lab')"
+        :class="[
+          'rounded-sm px-6 py-2 font-medium transition-colors shadow-none text-sm',
+          activePool === 'Lab'
+            ? 'bg-violet-600 text-white'
+            : 'bg-white border border-purple-200 text-purple-700 hover:bg-purple-50',
+        ]"
+      >
+        Lab Pool
+      </button>
     </div>
 
-    <div class="max-w-7xl mx-auto px-6 pb-20">
-      <div v-if="matches.length === 0" class="text-center py-20 text-gray-400">
-        Matches are being arranged. Stay tuned!
+    <!-- Empty State -->
+    <div
+      v-if="matches.length === 0"
+      class="flex h-64 flex-col items-center justify-center rounded-sm border border-purple-200 bg-white p-10 text-center"
+    >
+      <div class="mb-4 text-purple-300">
+        <!-- SVG Icon: Calendar/Loading -->
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
       </div>
-      <div v-else class="flex flex-wrap gap-12 justify-center items-center">
-        <div class="flex flex-col gap-12">
-          <BracketNode
-            v-for="m in matches.slice(0, 2)"
-            :key="m.id"
-            :match="m"
-            @open-video="(url) => (videoUrl = url)"
-          />
-        </div>
-        <div class="flex flex-col gap-12">
-          <BracketNode
-            v-for="m in matches.slice(2, 4)"
-            :key="m.id"
-            :match="m"
-            @open-video="(url) => (videoUrl = url)"
-          />
-        </div>
-        <div>
-          <BracketNode
-            v-if="matches[4]"
-            :match="matches[4]"
-            @open-video="(url) => (videoUrl = url)"
-          />
-        </div>
+      <h3 class="text-lg font-medium text-purple-900">Bracket is Generating</h3>
+      <p class="text-slate-500 font-light mt-1">
+        Matches are being arranged by the Admin. Stay tuned!
+      </p>
+    </div>
+
+    <!-- Bracket Display -->
+    <div v-else class="flex flex-wrap gap-12 justify-center items-center">
+      <!-- Round 1 -->
+      <div class="flex flex-col gap-12">
+        <BracketNode
+          v-for="m in matches.slice(0, 2)"
+          :key="m.id"
+          :match="m"
+          @open-video="(url) => (videoUrl = url)"
+        />
+      </div>
+      <!-- Round 2 (Winners) -->
+      <div class="flex flex-col gap-12">
+        <BracketNode
+          v-for="m in matches.slice(2, 4)"
+          :key="m.id"
+          :match="m"
+          @open-video="(url) => (videoUrl = url)"
+        />
+      </div>
+      <!-- Final -->
+      <div>
+        <BracketNode
+          v-if="matches[4]"
+          :match="matches[4]"
+          @open-video="(url) => (videoUrl = url)"
+        />
       </div>
     </div>
 

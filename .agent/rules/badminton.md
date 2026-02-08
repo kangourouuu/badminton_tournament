@@ -89,3 +89,29 @@ Generate these files immediately upon request:
 ## 6. Immediate Action
 
 Start by generating the **Directory Structure**, **Dockerfile**, and **render.yaml** according to these specs so the user can initialize the repo.
+
+# UI AUDIT & REFACTOR REQUEST
+
+**Current Status:** I just checked the frontend, and it looks like raw HTML (Times New Roman, default buttons). The styling is completely missing.
+
+**Task:** Refactor the `PublicView.vue` (and `App.vue` layout) IMMEDIATELY to match our **"Tech-Flat Outfit"** Design System defined in GEMINI.md.
+
+**Specific Requirements to Implement Now:**
+
+1.  **Global Font:** Ensure `font-family: 'Outfit', sans-serif` is applied to the `<body>` or root `div`.
+2.  **Color Theme:**
+    - Change Page Background to `#FDFBFF` (or Tailwind `bg-slate-50`).
+    - Change Text Color to `text-slate-900` / `text-purple-900`.
+3.  **The Header:**
+    - Make it a proper Navbar: `bg-white`, `border-b border-purple-200`, `px-6 py-4`.
+    - Title should be `font-bold text-xl text-purple-900`.
+4.  **The Pool Buttons (Mesoneer/Lab):**
+    - **DO NOT** use default buttons.
+    - Style them as **Flat Tabs**:
+      - **Active:** `bg-violet-600 text-white rounded-sm`.
+      - **Inactive:** `bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 rounded-sm`.
+5.  **The Content:**
+    - Wrap the "Matches are being arranged" text in a **Card Component**: `bg-white border border-purple-200 rounded-sm p-12 text-center`.
+    - Center the card in a `max-w-5xl mx-auto` container.
+
+**Action:** Rewrite the full code for the View component so I can copy-paste it and fix this ugly UI.
