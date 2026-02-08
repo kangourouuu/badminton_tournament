@@ -32,6 +32,16 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Auto-migrate schema on startup
+	if err := db.CreateSchema(context.Background()); err != nil {
+		log.Fatalf("Failed to create schema: %v", err)
+	}
+	
+	// Gin Mode
+	if os.Getenv("GIN_MODE") == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	r := gin.Default()
 	
 	// Add CORS

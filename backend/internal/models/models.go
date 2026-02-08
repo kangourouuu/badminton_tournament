@@ -35,6 +35,8 @@ type Team struct {
 	Pool      string    `bun:"pool,notnull" json:"pool"`
 	Name      string    `bun:"name,notnull" json:"name"`
 
+	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
+
 	// Relations
 	Player1 *Participant `bun:"rel:belongs-to,join:player1_id=id" json:"player1,omitempty"`
 	Player2 *Participant `bun:"rel:belongs-to,join:player2_id=id" json:"player2,omitempty"`
