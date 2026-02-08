@@ -1,0 +1,3 @@
+p, admin, *, *
+p, viewer, /api/public/*, GET
+p, viewer, /api/bracket, GET

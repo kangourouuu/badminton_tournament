@@ -1,17 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Outfit", "sans-serif";
-  --color-background: #fdfbff;
-  --color-surface: #ffffff;
-  --color-primary: #7c3aed;
-  --color-border: #e9d5ff;
-
-  /* Retain default shadow-none if needed, generally classes handle it */
+  --font-sans: "Outfit", sans-serif;
 }
 
-@layer base {
-  body {
-    @apply bg-background text-gray-900 font-sans antialiased;
-  }
+:root {
+  font-family: "Outfit", sans-serif;
+  background-color: #fdfbff; /* Tech-Flat Background */
+  color: #1a1a1a;
 }

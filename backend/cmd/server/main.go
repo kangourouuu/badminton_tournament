@@ -7,13 +7,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
-	"github.com/yourname/badminton-manager/backend/internal/api"
-	"github.com/yourname/badminton-manager/backend/internal/db"
+	"badminton_tournament/backend/internal/api"
+	"badminton_tournament/backend/internal/db"
 )
 
 func main() {
 	if err := db.Connect(); err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
+	}
+	
+	// Gin Mode
+	if os.Getenv("GIN_MODE") == "release" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	r := gin.Default()
@@ -26,6 +31,7 @@ func main() {
 	} else {
 		config.AllowAllOrigins = true
 	}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	r.Use(cors.New(config))
 
 	handler := api.NewHandler(db.DB)

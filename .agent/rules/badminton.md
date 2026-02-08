@@ -2,116 +2,89 @@
 trigger: always_on
 ---
 
-# GEMINI.md - Project: `badminton_tournament`
+# GEMINI_FULL_SPEC.md
 
-## 1. Context & Role
+## 1. Project Identity
 
-- **Project Name:** `badminton_tournament`
-- **Role:** Senior Full-stack Engineer & DevOps.
-- **Goal:** Build a Tournament Manager in 1 Day.
-- **Stack:** \* **Backend:** Go (Gin, Bun, Postgres).
-  - **Frontend:** Vue 3 (Vite, Tailwind, TypeScript).
-  - **DB:** Neon.tech (Postgres) - Branched (Main/Dev).
-  - **Deploy:** Docker (Render) & Vercel.
+- **Name:** `badminton_tournament`
+- **Goal:** A 1-Day Tournament Manager with GSL Automation.
+- **Stack:** Go (Gin/Bun), Vue 3 (Vite/Tailwind), Neon Postgres.
 
-## 2. Infrastructure as Code (IaC) Requirements
+## 2. Design System: "Tech-Flat Outfit"
 
-Generate these files immediately upon request:
+- **Font:** `Outfit` (Global).
+- **Borders:** `border-purple-200` (Default), `border-violet-600` (Active/Brand).
+- **Radius:** `rounded-sm` (2px).
+- **Shadows:** NONE. usage of `box-shadow` is strictly prohibited.
 
-- **`backend/Dockerfile`:** Multi-stage (Go 1.22 -> Alpine). `CGO_ENABLED=0`.
-- **`render.yaml`:** Define 2 services: `badminton-be-prod` (main branch) and `badminton-be-dev` (dev branch). Use `sync: false` for `DATABASE_URL`.
-- **`frontend/vercel.json`:** SPA Rewrite rules.
+## 3. Database Schema (Postgres)
 
-## 3. Design System: "Tech-Flat Outfit" (Strict)
+Create these tables using Bun models:
 
-- **Font:** 'Outfit' (Google Font).
-- **Shape:** `rounded-sm` (2px). Sharp edges.
-- **Depth:** **NO SHADOWS**. Use `border-purple-200` to define structure.
-- **Palette:** Background `#FDFBFF` (Pale Purple), Surface `#FFFFFF`, Accent `#7C3AED`.
+1.  `Participant`: id, name, email (unique), pool (enum: 'Mesoneer', 'Lab').
+2.  `Team`: id, player1_id, player2_id, pool.
+3.  `Group`: id, name.
+4.  `Match`:
+    - `id, group_id, label` (e.g., 'M1', 'Winners').
+    - `team_a_id, team_b_id` (Nullable).
+    - `winner_id` (Nullable).
+    - `score` (String), `video_url` (String).
+    - `next_match_win_id` (UUID), `next_match_lose_id` (UUID).
 
-## 4. Business Logic & Constraints
+## 4. API Logic Specifications
 
-### A. Participants & Pools (CRITICAL)
+### A. Team Generation (`POST /api/teams/generate`)
 
-- **Data Model:** `Participant` table must have a `pool` field (Enum/String: 'Mesoneer', 'Lab').
-- **Input:** Webhook from Google Forms includes the Pool.
+- **Input:** `pool` ("Mesoneer").
+- **Logic:** Fetch participants by pool -> Shuffle -> Chunk into pairs -> Save to DB.
+- **Constraint:** Ensure participants are from the same pool.
 
-### B. Team Formation (The Wheel)
+### B. Bracket Factory (`POST /api/groups`)
 
-- **Constraint:** Teams must be formed **within the same Pool**.
-  - _Logic:_ Admin selects "Spin for Mesoneer" -> System filters participants with `pool='Mesoneer'` -> Randomizes pairs -> Creates Teams.
-  - _Logic:_ Same process for "Lab".
-- **UI:** The Wheel component visually spins and outputs the pairs.
+- **Input:** `name`, `team_ids` (List of 4 UUIDs).
+- **Logic:**
+  1.  Create Group.
+  2.  Create 5 Matches (M1..M5).
+  3.  **Linkage (Crucial):**
+      - M1 & M2 `next_win` -> M3. `next_lose` -> M4.
+      - M3 `next_lose` -> M5.
+      - M4 `next_win` -> M5.
+  4.  Assign the 4 Teams to M1 (Slots A/B) and M2 (Slots A/B).
 
-### C. Bracket & Scoring (GSL Format)
+### C. Match Update (`POST /api/matches/:id`)
 
-- **Generation:** Admin assigns Teams to Groups. System auto-generates 5 Matches per Group (GSL Structure).
-- **Execution:**
-  - **No Real-time:** Scores are entered only after the match ends (Final Result).
-  - **Video:** Admin inputs `video_url` (YouTube link) along with the score.
-- **Auto-Advance:** When Admin saves the Final Score -> System calculates Winner -> Updates the `team_id` in the next bracket slot automatically.
+- **Input:** `winner_id`, `score`, `video_url`.
+- **Logic:**
+  1.  Update current match.
+  2.  **Propagation:** \* Find match with ID `next_match_win_id`. Update its empty slot with `winner_id`.
+      - Find match with ID `next_match_lose_id`. Update its empty slot with the loser.
 
-### D. Public Layer
+## 5. Frontend Specs (Vue 3)
 
-- Read-only view.
-- Shows the Bracket tree (GSL Layout).
-- **Replay:** If `match.video_url` is not empty, show a "Play" icon (Outline style). Clicking it opens a Modal to watch.
+### Components
 
-## 5. Execution Roadmap
+- **`MatchCard.vue`:**
+  - Display: Team Names vs Team Names.
+  - State: 'Scheduled' (Gray), 'Live' (Purple Border), 'Finished' (Green Text for Winner).
+  - Action: Admin click opens Modal. Public click 'Play' opens Video.
+- **`GSLGrid.vue`:**
+  - Use CSS Grid: `grid-template-columns: 1fr 1fr 1fr`.
+  - Render matches in topological order (Left to Right).
 
-### Phase 1: Scaffolding (Infrastructure)
+### Authentication
 
-- Generate Monorepo structure: `backend/`, `frontend/`.
-- Generate `Dockerfile`, `render.yaml`.
-- Initialize Go Mod and Vue 3 project (with Tailwind/Outfit config).
+- Create `views/Login.vue`.
+- Store JWT in LocalStorage.
+- Add `Axios` interceptor to inject `Authorization` header.
 
-### Phase 2: Backend Core (Go)
+## 6. Execution Order
 
-- **Models:** `Tournament`, `Participant` (Pool), `Team`, `Match` (VideoURL).
-- **API:**
-  - `POST /api/webhooks/form`: Ingest participants.
-  - `POST /api/teams/generate`: Input `pool_name` -> Return random pairs.
-  - `POST /api/matches/:id/result`: Input `{score_a, score_b, video_url}` -> Finalize match.
+1.  **Backend Models & DB Migration** (First priority).
+2.  **API: Webhook & Team Gen**.
+3.  **API: Bracket Logic** (The hardest part).
+4.  **Frontend: Admin Auth & Dashboard**.
+5.  **Frontend: Public View & Polish**.
 
-### Phase 3: Frontend UI (Vue)
+## 7. Immediate Task
 
-- **Admin Dashboard:** \* Tabs for "Mesoneer" vs "Lab".
-  - "Spin Wheel" button (filters by active tab).
-  - Bracket Manager (Enter Score + Paste Video Link).
-- **Public View:**
-  - Flat Design Bracket.
-  - Video Modal (`<iframe src="...">`).
-
-### Phase 4: CI/CD
-
-- Create `.github/workflows/pipeline.yml` (Test & Build Check).
-
-## 6. Immediate Action
-
-Start by generating the **Directory Structure**, **Dockerfile**, and **render.yaml** according to these specs so the user can initialize the repo.
-
-# UI AUDIT & REFACTOR REQUEST
-
-**Current Status:** I just checked the frontend, and it looks like raw HTML (Times New Roman, default buttons). The styling is completely missing.
-
-**Task:** Refactor the `PublicView.vue` (and `App.vue` layout) IMMEDIATELY to match our **"Tech-Flat Outfit"** Design System defined in GEMINI.md.
-
-**Specific Requirements to Implement Now:**
-
-1.  **Global Font:** Ensure `font-family: 'Outfit', sans-serif` is applied to the `<body>` or root `div`.
-2.  **Color Theme:**
-    - Change Page Background to `#FDFBFF` (or Tailwind `bg-slate-50`).
-    - Change Text Color to `text-slate-900` / `text-purple-900`.
-3.  **The Header:**
-    - Make it a proper Navbar: `bg-white`, `border-b border-purple-200`, `px-6 py-4`.
-    - Title should be `font-bold text-xl text-purple-900`.
-4.  **The Pool Buttons (Mesoneer/Lab):**
-    - **DO NOT** use default buttons.
-    - Style them as **Flat Tabs**:
-      - **Active:** `bg-violet-600 text-white rounded-sm`.
-      - **Inactive:** `bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 rounded-sm`.
-5.  **The Content:**
-    - Wrap the "Matches are being arranged" text in a **Card Component**: `bg-white border border-purple-200 rounded-sm p-12 text-center`.
-    - Center the card in a `max-w-5xl mx-auto` container.
-
-**Action:** Rewrite the full code for the View component so I can copy-paste it and fix this ugly UI.
+Start by generating the **Backend Models** (`internal/models/models.go`) including the struct tags for Bun ORM and the JSON tags.

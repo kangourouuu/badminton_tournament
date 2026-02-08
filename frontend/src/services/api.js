@@ -7,28 +7,16 @@ const api = axios.create({
   },
 });
 
-export default {
-  getParticipants(pool) {
-    // We didn't create a specific get participants endpoint, but we can if needed.
-    // Or just rely on teams for now.
-    // Wait, Wheel needs participants.
-    // I need GET /participants?pool=X.
-    // I missed implementing GET /participants in backend.
-    // For now, I'll Mock it or just use what I have.
-    // Actually, the Wheel just needs a list of names for visual effect.
-    // I'll stick to 'generate teams' which does the logic on backend.
-    return Promise.resolve([]);
+// Add a request interceptor to inject the token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
   },
-  generateTeams(pool) {
-    return api.post("/teams/generate", { pool });
-  },
-  generateBracket(teamIds, pool) {
-    return api.post("/bracket/generate", { team_ids: teamIds, pool });
-  },
-  getBracket(pool) {
-    return api.get(`/bracket?pool=${pool}`);
-  },
-  updateMatch(id, data) {
-    return api.post(`/matches/${id}/result`, data);
-  },
-};
+  (error) => Promise.reject(error),
+);
+
+export default api;

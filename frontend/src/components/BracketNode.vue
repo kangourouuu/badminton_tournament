@@ -48,6 +48,14 @@ const getWinnerClass = (teamId) => {
       <span class="font-mono">{{ match.score_b }}</span>
     </div>
 
+    <!-- Score Details -->
+    <div
+      v-if="match.score_details"
+      class="px-1 mt-1 text-[10px] text-gray-400 text-center"
+    >
+      {{ match.score_details }}
+    </div>
+
     <!-- Admin Actions -->
     <button
       v-if="admin && match.team_a_id && match.team_b_id && !match.winner_id"
