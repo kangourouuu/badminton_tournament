@@ -49,6 +49,14 @@ func Connect() error {
 		return fmt.Errorf("failed to parse DATABASE_URL: %w", err)
 	}
 
+	// Remove 'options' param if present (as requested by user)
+	q := parsedURL.Query()
+	if q.Has("options") {
+		q.Del("options")
+		parsedURL.RawQuery = q.Encode()
+		log.Println("DEBUG: Removed 'options' param from DSN")
+	}
+
 	// 2. Extract specific Neon endpoint ID for "options=endpoint=..."
 	// Host format is usually: ep-xyz-123.region.aws.neon.tech
 	host := parsedURL.Hostname()
