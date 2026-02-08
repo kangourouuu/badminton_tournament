@@ -25,7 +25,9 @@ const generate = async () => {
 
   try {
     const response = await api.post("/teams/generate", { pool: props.pool });
+
     generatedTeams.value = response.data.teams || [];
+
     emit("teams-generated");
   } catch (err) {
     error.value =

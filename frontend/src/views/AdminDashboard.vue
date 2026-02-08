@@ -33,9 +33,11 @@ const fetchData = async () => {
       api.get("/teams"),
       api.get("/groups"),
     ]);
+
     participants.value = pRes.data || [];
     teams.value = tRes.data || [];
     groups.value = gRes.data || [];
+
   } catch (err) {
     console.error("Fetch error", err);
     if (err.response?.status === 401) {

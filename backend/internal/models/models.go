@@ -29,6 +29,7 @@ type Participant struct {
 type Team struct {
 	bun.BaseModel `bun:"table:teams,alias:tm"`
 
+
 	ID        uuid.UUID `bun:"id,pk,type:uuid,default:gen_random_uuid()" json:"id"`
 	Player1ID uuid.UUID `bun:"player1_id,type:uuid,notnull" json:"player1_id"`
 	Player2ID uuid.UUID `bun:"player2_id,type:uuid" json:"player2_id"` // Nullable logic handled by pointer or omitted if strict
@@ -36,6 +37,7 @@ type Team struct {
 	Name      string    `bun:"name,notnull" json:"name"`
 
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
+
 
 	// Relations
 	Player1 *Participant `bun:"rel:belongs-to,join:player1_id=id" json:"player1,omitempty"`
