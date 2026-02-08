@@ -34,7 +34,8 @@ func Connect() error {
 	// 2. Extract specific Neon endpoint ID for "options=endpoint=..."
 	// Host format is usually: ep-xyz-123.region.aws.neon.tech
 	host := parsedURL.Hostname()
-	password, _ := parsedURL.User.Password()
+	// Password is not needed here as it's part of the DSN
+	// password, _ := parsedURL.User.Password()
 	
 	// Create pgdriver options
 	pgOptions := []pgdriver.Option{
