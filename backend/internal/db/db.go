@@ -33,12 +33,14 @@ func Connect() error {
 			hostParts := strings.Split(parts[1], ".")
 			if len(hostParts) > 0 {
 				endpointID := hostParts[0]
+				endpointID = strings.TrimSuffix(endpointID, "-pooler")
+
 				if strings.Contains(dsn, "?") {
 					dsn += "&options=endpoint%3D" + endpointID
 				} else {
 					dsn += "?options=endpoint%3D" + endpointID
 				}
-				fmt.Printf("Auto-patched Neon DSN with endpoint ID: %s\n", endpointID)
+				fmt.Printf("DEBUG: Auto-patched Neon DSN with endpoint ID: %s\n", endpointID)
 			}
 		}
 	}
