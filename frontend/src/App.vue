@@ -1,11 +1,20 @@
-<script setup></script>
+<script setup>
+import { ref, computed } from "vue";
+import AdminDashboard from "./components/AdminDashboard.vue";
+import PublicView from "./components/PublicView.vue";
+
+const currentPath = ref(window.location.hash);
+
+window.addEventListener("hashchange", () => {
+  currentPath.value = window.location.hash;
+});
+
+const currentView = computed(() => {
+  if (currentPath.value === "#/admin") return AdminDashboard;
+  return PublicView;
+});
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <component :is="currentView" />
 </template>
-
-<style scoped></style>
