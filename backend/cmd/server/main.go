@@ -20,7 +20,12 @@ func main() {
 	
 	// Add CORS
 	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins != "" {
+		config.AllowOrigins = []string{allowedOrigins}
+	} else {
+		config.AllowAllOrigins = true
+	}
 	r.Use(cors.New(config))
 
 	handler := api.NewHandler(db.DB)
