@@ -11,12 +11,12 @@ services:
       - key: GIN_MODE
         value: release
       - key: DATABASE_URL
-        value: postgresql://neondb_owner:npg_afOY51oyBtnv@ep-twilight-bird-a1oxla0f-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+        value: postgresql://neondb_owner:npg_afOY51oyBtnv@ep-twilight-bird-a1oxla0f-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require&options=endpoint%3Dep-twilight-bird-a1oxla0f
         sync: false
   - type: web
     name: badminton-be-dev
     runtime: docker
-    repo: https://github.com/YOUR_USER/badminton_tournament
+    repo: https://github.com/kangourouuu/badminton_tournament
     branch: dev
     rootDir: backend
     plan: free
@@ -25,5 +25,5 @@ services:
       - key: GIN_MODE
         value: debug
       - key: DATABASE_URL
-        value: postgresql://neondb_owner:npg_afOY51oyBtnv@ep-red-shadow-a1uoooo9-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+        value: postgresql://neondb_owner:npg_afOY51oyBtnv@ep-red-shadow-a1uoooo9-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require&options=endpoint%3Dep-red-shadow-a1uoooo9
         sync: false
