@@ -34,6 +34,7 @@ type Team struct {
 	Player2ID uuid.UUID `bun:"player2_id,type:uuid" json:"player2_id"` // Nullable logic handled by pointer or omitted if strict
 	Pool      string    `bun:"pool,notnull" json:"pool"`
 	Name      string    `bun:"name,notnull" json:"name"`
+	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
 
 	// Relations
 	Player1 *Participant `bun:"rel:belongs-to,join:player1_id=id" json:"player1,omitempty"`
