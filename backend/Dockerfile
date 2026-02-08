@@ -6,19 +6,19 @@ RUN apk add --no-cache git ca-certificates
 ENV GOPROXY=direct
 ENV GOSUMDB=off
 
-# Copy go.mod and go.sum (if exists)
-COPY go.mod go.sum* ./
+# 1. Copy EVERYTHING first
+# This includes source code, go.mod, and potentially broken go.sum
+COPY . .
 
-# Force tidy to generate/fix go.sum inside the container
+# 2. Cleanup and Fix Dependencies
+# Remove existing go.sum to force fresh resolution
+RUN rm -f go.sum
+# Run tidy to generate correct go.mod and go.sum based on the source code present
 RUN go mod tidy
-
 # Download dependencies
 RUN go mod download
 
-COPY . .
-
-# Build without -mod=mod (use what we downloaded)
-# Force rebuild with correct OS/Arch
+# 3. Build using the now-correct dependencies
 RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server/main.go
 
 FROM alpine:latest
