@@ -25,6 +25,24 @@ func Connect() error {
 		return fmt.Errorf("DATABASE_URL is not set")
 	}
 
+	// Auto-fix for corrupted DSNs (e.g. double copy-paste in Render Dashboard)
+	// Example corruption: postgresql://user:pass://postgresql://real_user:real_pass@host...
+	if strings.Count(dsn, "://") > 1 {
+		log.Printf("WARNING: Detected malformed DATABASE_URL with multiple schemes. Attempting to auto-fix.")
+		
+		// Find the last occurrence of the scheme separator
+		lastIndex := strings.LastIndex(dsn, "://")
+		if lastIndex != -1 {
+			// Backtrack to find the start of the scheme (e.g., "postgresql" or "postgres")
+			// Simple heuristic: just look for the last "postgres" before the "://"
+			prefixStart := strings.LastIndex(dsn[:lastIndex], "postgres")
+			if prefixStart != -1 {
+				dsn = dsn[prefixStart:]
+				log.Printf("DEBUG: Auto-fixed DSN to start from index %d", prefixStart)
+			}
+		}
+	}
+
 	// 1. Parse the URL to extract host and fix options
 	parsedURL, err := url.Parse(dsn)
 	if err != nil {
