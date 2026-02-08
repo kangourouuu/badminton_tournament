@@ -19,6 +19,13 @@ func Connect() error {
 		return fmt.Errorf("DATABASE_URL is not set")
 	}
 
+	// Debug log: Print DSN masked
+	maskedDSN := dsn
+	if parts := strings.Split(dsn, "@"); len(parts) > 1 {
+		maskedDSN = "postgres://****@" + parts[1]
+	}
+	fmt.Printf("DEBUG: Init DB connection with DSN: %s\n", maskedDSN)
+
 	// Auto-fix for Neon.tech SNI if options are missing
 	if strings.Contains(dsn, "neon.tech") && !strings.Contains(dsn, "endpoint=") {
 		parts := strings.Split(dsn, "@")
