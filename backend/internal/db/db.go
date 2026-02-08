@@ -65,34 +65,6 @@ func Connect() error {
 		// Log masked DSN for debugging
 		log.Printf("DEBUG: Detected Neon DB host: %s", host)
 
-		// Extract endpoint ID (the first part of the hostname)
-		parts := strings.Split(host, ".")
-		if len(parts) > 0 {
-			endpointID := parts[0]
-			// remove pooler suffix if present, though usually endpoint ID is enough
-			// endpointID = strings.TrimSuffix(endpointID, "-pooler") 
-			
-			// We MUST force the endpoint ID in the connection options for Neon/Render
-			// This is the critical fix for "endpoint ID" errors
-			// We append it to the application name or use a specific driver option if available,
-			// but pgdriver supports it via the DSN 'options' param. 
-			// However, since we are using pgdriver.NewConnector, we can set it explicitly via TLS config 
-			// OR just modify the DSN string.
-			
-			// Let's modify the DSN query params to ensure options=endpoint=<id> is present
-			q := parsedURL.Query()
-			currentOptions := q.Get("options")
-			if !strings.Contains(currentOptions, "endpoint=") {
-				newOption := fmt.Sprintf("endpoint=%s", endpointID)
-				if currentOptions == "" {
-					q.Set("options", newOption)
-				} else {
-					q.Set("options", currentOptions+" "+newOption)
-				}
-				parsedURL.RawQuery = q.Encode()
-				log.Printf("DEBUG: Patched DSN with options: %s", q.Get("options"))
-			}
-		}
 
 		// Critical: Set ServerName for SNI
 		// Render's outgoing IP might not match the reverse lookup of the DB, 
