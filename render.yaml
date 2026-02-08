@@ -2,7 +2,7 @@ services:
   - type: web
     name: badminton-be-prod
     runtime: docker
-    repo: https://github.com/YOUR_USER/badminton_tournament
+    repo: https://github.com/kangourouuu/badminton_tournament
     branch: main
     rootDir: backend
     plan: free
