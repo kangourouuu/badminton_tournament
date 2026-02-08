@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: badminton-be-prod
+    runtime: docker
+    repo: https://github.com/YOUR_USER/badminton_tournament
+    branch: main
+    rootDir: backend
+    plan: free
+    region: singapore
+    envVars:
+      - key: GIN_MODE
+        value: release
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_afOY51oyBtnv@ep-twilight-bird-a1oxla0f-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+        sync: false
+  - type: web
+    name: badminton-be-dev
+    runtime: docker
+    repo: https://github.com/YOUR_USER/badminton_tournament
+    branch: dev
+    rootDir: backend
+    plan: free
+    region: singapore
+    envVars:
+      - key: GIN_MODE
+        value: debug
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_afOY51oyBtnv@ep-red-shadow-a1uoooo9-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+        sync: false

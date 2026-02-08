@@ -1,0 +1,18 @@
+# Binaries
+/backend/server
+/backend/bin/
+
+# Modules
+/backend/vendor/
+/node_modules/
+/frontend/node_modules/
+
+# OS
+.DS_Store
+
+# Env
+.env
+
+# Vite
+/frontend/dist/
+/frontend/.vite/

@@ -2,73 +2,90 @@
 trigger: always_on
 ---
 
-# GEMINI.md - Badminton Tournament System (Full Stack & IaC)
+# GEMINI.md - Project: `badminton_tournament`
 
-## 1. Role & Context
+## 1. Context & Role
 
-- **Role:** Senior Full-stack Engineer (Go/Vue) & DevOps.
-- **Goal:** Build & Deploy a **Badminton Tournament Manager** in 1 Day.
-- **Deployment:** \* **Backend:** Render (via `render.yaml`) with Docker.
-  - **Frontend:** Vercel (via `vercel.json`).
-  - **Database:** Neon.tech (Postgres) - Separated `dev` and `prod` branches.
+- **Project Name:** `badminton_tournament`
+- **Role:** Senior Full-stack Engineer & DevOps.
+- **Goal:** Build a Tournament Manager in 1 Day.
+- **Stack:** \* **Backend:** Go (Gin, Bun, Postgres).
+  - **Frontend:** Vue 3 (Vite, Tailwind, TypeScript).
+  - **DB:** Neon.tech (Postgres) - Branched (Main/Dev).
+  - **Deploy:** Docker (Render) & Vercel.
 
 ## 2. Infrastructure as Code (IaC) Requirements
 
-You must generate the following configuration files accurately:
+Generate these files immediately upon request:
 
-- **`backend/Dockerfile`:** Multi-stage build (Golang 1.22 -> Alpine). CGO_ENABLED=0.
-- **`render.yaml`:** Define two services (`badminton-be-dev` linked to `dev` branch, `badminton-be-prod` linked to `main` branch). Use `sync: false` for `DATABASE_URL`.
-- **`frontend/vercel.json`:** Handle SPA rewrites to `/index.html`.
+- **`backend/Dockerfile`:** Multi-stage (Go 1.22 -> Alpine). `CGO_ENABLED=0`.
+- **`render.yaml`:** Define 2 services: `badminton-be-prod` (main branch) and `badminton-be-dev` (dev branch). Use `sync: false` for `DATABASE_URL`.
+- **`frontend/vercel.json`:** SPA Rewrite rules.
 
 ## 3. Design System: "Tech-Flat Outfit" (Strict)
 
-- **Font:** 'Outfit' (Google Font) everywhere.
-- **Shape:** `rounded-sm` (2px). Sharp, precise look.
-- **Depth:** **NO SHADOWS**. Use `border-purple-200` to define hierarchy.
-- **Palette:**
-  - Background: `#FDFBFF` (Ultra-light Purple).
-  - Borders: `#E9D5FF`.
-  - Accents: `#7C3AED` (Violet).
+- **Font:** 'Outfit' (Google Font).
+- **Shape:** `rounded-sm` (2px). Sharp edges.
+- **Depth:** **NO SHADOWS**. Use `border-purple-200` to define structure.
+- **Palette:** Background `#FDFBFF` (Pale Purple), Surface `#FFFFFF`, Accent `#7C3AED`.
 
-## 4. Business Logic: GSL Group Stage
+## 4. Business Logic & Constraints
 
-- **Input:** 4 Teams.
-- **Structure:** 5 Matches (Opening A, Opening B, Winners, Losers, Decider).
-- **Automation Rule:**
-  - When Admin submits a score for Match X:
-  - Logic checks: Is Match Over? Who Won?
-  - Database Update: Automatically write the Winner/Loser ID into the `TeamID` fields of the connected Future Matches.
+### A. Participants & Pools (CRITICAL)
+
+- **Data Model:** `Participant` table must have a `pool` field (Enum/String: 'Mesoneer', 'Lab').
+- **Input:** Webhook from Google Forms includes the Pool.
+
+### B. Team Formation (The Wheel)
+
+- **Constraint:** Teams must be formed **within the same Pool**.
+  - _Logic:_ Admin selects "Spin for Mesoneer" -> System filters participants with `pool='Mesoneer'` -> Randomizes pairs -> Creates Teams.
+  - _Logic:_ Same process for "Lab".
+- **UI:** The Wheel component visually spins and outputs the pairs.
+
+### C. Bracket & Scoring (GSL Format)
+
+- **Generation:** Admin assigns Teams to Groups. System auto-generates 5 Matches per Group (GSL Structure).
+- **Execution:**
+  - **No Real-time:** Scores are entered only after the match ends (Final Result).
+  - **Video:** Admin inputs `video_url` (YouTube link) along with the score.
+- **Auto-Advance:** When Admin saves the Final Score -> System calculates Winner -> Updates the `team_id` in the next bracket slot automatically.
+
+### D. Public Layer
+
+- Read-only view.
+- Shows the Bracket tree (GSL Layout).
+- **Replay:** If `match.video_url` is not empty, show a "Play" icon (Outline style). Clicking it opens a Modal to watch.
 
 ## 5. Execution Roadmap
 
-### Step 1: Scaffolding & Config
+### Phase 1: Scaffolding (Infrastructure)
 
-- Generate the Monorepo structure.
-- Generate `Dockerfile`, `render.yaml`, `vercel.json`.
-- Initialize Go (Gin, Bun) and Vue (Vite, Tailwind, Outfit font setup).
+- Generate Monorepo structure: `backend/`, `frontend/`.
+- Generate `Dockerfile`, `render.yaml`.
+- Initialize Go Mod and Vue 3 project (with Tailwind/Outfit config).
 
-### Step 2: Backend Core (Go)
+### Phase 2: Backend Core (Go)
 
-- Create Models: `Tournament`, `Participant`, `Match`, `Team`.
-- Implement `POST /webhooks/form`: Receive Google Form JSON.
-- Implement `POST /generate-bracket`: The Logic Engine for GSL.
+- **Models:** `Tournament`, `Participant` (Pool), `Team`, `Match` (VideoURL).
+- **API:**
+  - `POST /api/webhooks/form`: Ingest participants.
+  - `POST /api/teams/generate`: Input `pool_name` -> Return random pairs.
+  - `POST /api/matches/:id/result`: Input `{score_a, score_b, video_url}` -> Finalize match.
 
-### Step 3: Frontend UI (Vue)
+### Phase 3: Frontend UI (Vue)
 
-- **`BracketNode.vue`:** A flat card component.
-- **`GSLGrid.vue`:** 3-column CSS Grid layout for the matches.
-- **`Wheel.vue`:** Visual team randomizer.
+- **Admin Dashboard:** \* Tabs for "Mesoneer" vs "Lab".
+  - "Spin Wheel" button (filters by active tab).
+  - Bracket Manager (Enter Score + Paste Video Link).
+- **Public View:**
+  - Flat Design Bracket.
+  - Video Modal (`<iframe src="...">`).
 
-### Step 4: GitHub Actions
+### Phase 4: CI/CD
 
-- Create `.github/workflows/pipeline.yml` to run `go test` and `npm run build` on Push/PR to `main` and `dev`.
+- Create `.github/workflows/pipeline.yml` (Test & Build Check).
 
-## 6. Constraints
+## 6. Immediate Action
 
-- **Security:** Admin Endpoints must be protected (JWT or Basic Auth).
-- **Performance:** Frontend must poll API every 30s for live updates.
-- **Code Style:** Clean, idiomatic Go and TypeScript.
-
-## 7. Immediate Action
-
-Start by generating the **Directory Structure**, **Dockerfile**, and **render.yaml** so the user can push the initial commit.
+Start by generating the **Directory Structure**, **Dockerfile**, and **render.yaml** according to these specs so the user can initialize the repo.
