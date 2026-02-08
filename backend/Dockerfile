@@ -2,23 +2,24 @@ FROM golang:1.22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache git ca-certificates
 
-# Bypass Go Proxy/SumDB issues for this specific repo context
-ENV GOPROXY=direct
+# Use standard Go Proxy for reliability (Render/Singapore should handle this fine)
+# Fallback to direct if proxy fails
+ENV GOPROXY=https://proxy.golang.org,direct
+# Disable SumDB providing checksum validation is hindering the build (iasm issue)
 ENV GOSUMDB=off
 
 # 1. Copy EVERYTHING first
-# This includes source code, go.mod, and potentially broken go.sum
 COPY . .
 
 # 2. Cleanup and Fix Dependencies
 # Remove existing go.sum to force fresh resolution
 RUN rm -f go.sum
-# Run tidy to generate correct go.mod and go.sum based on the source code present
+# Run tidy to generate correct go.mod and go.sum based on source
 RUN go mod tidy
 # Download dependencies
 RUN go mod download
 
-# 3. Build using the now-correct dependencies
+# 3. Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server/main.go
 
 FROM alpine:latest
