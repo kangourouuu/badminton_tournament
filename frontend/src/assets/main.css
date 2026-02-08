@@ -1,6 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", "sans-serif";
+  --color-background: #fdfbff;
+  --color-surface: #ffffff;
+  --color-primary: #7c3aed;
+  --color-border: #e9d5ff;
+
+  /* Retain default shadow-none if needed, generally classes handle it */
+}
 
 @layer base {
   body {

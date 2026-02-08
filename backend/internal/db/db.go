@@ -1,6 +1,7 @@
 package db
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"os"
@@ -45,7 +46,10 @@ func Connect() error {
 		}
 	}
 
-	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
+	sqldb := sql.OpenDB(pgdriver.NewConnector(
+		pgdriver.WithDSN(dsn),
+		pgdriver.WithTLSConfig(&tls.Config{InsecureSkipVerify: true}),
+	))
 	DB = bun.NewDB(sqldb, pgdialect.New())
 
 	// Basic check
