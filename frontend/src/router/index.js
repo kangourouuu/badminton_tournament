@@ -1,35 +1,33 @@
-import { createRouter, createWebHashHistory } from "vue-router";
-import PublicView from "../components/PublicView.vue";
-import AdminDashboard from "../components/AdminDashboard.vue";
+import { createRouter, createWebHistory } from "vue-router";
+import PublicView from "../views/PublicView.vue";
 import LoginView from "../views/LoginView.vue";
-
-const routes = [
-  {
-    path: "/",
-    name: "public",
-    component: PublicView,
-  },
-  {
-    path: "/admin/login",
-    name: "login",
-    component: LoginView,
-  },
-  {
-    path: "/admin",
-    name: "admin",
-    component: AdminDashboard,
-    meta: { requiresAuth: true },
-  },
-];
+import AdminDashboard from "../views/AdminDashboard.vue";
 
 const router = createRouter({
-  history: createWebHashHistory(),
-  routes,
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: "/",
+      name: "home",
+      component: PublicView,
+    },
+    {
+      path: "/login",
+      name: "login",
+      component: LoginView,
+    },
+    {
+      path: "/admin",
+      name: "admin",
+      component: AdminDashboard,
+      meta: { requiresAuth: true },
+    },
+  ],
 });
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem("token");
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
+  if (to.meta.requiresAuth) {
+    const token = localStorage.getItem("token");
     if (!token) {
       next({ name: "login" });
     } else {

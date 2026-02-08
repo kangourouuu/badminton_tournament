@@ -11,9 +11,10 @@ const router = useRouter();
 const handleLogin = async () => {
   loading.value = true;
   error.value = "";
-
   try {
-    const response = await api.login(password.value);
+    const response = await api.post("/auth/login", {
+      password: password.value,
+    });
     localStorage.setItem("token", response.data.token);
     router.push("/admin");
   } catch (err) {
@@ -25,36 +26,33 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="flex min-h-[80vh] items-center justify-center">
+  <div class="flex items-center justify-center min-h-screen bg-gray-50">
     <div
-      class="w-full max-w-md rounded-sm border border-purple-200 bg-white p-8"
+      class="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-sm border border-purple-100"
     >
-      <h2 class="mb-6 text-center text-2xl font-bold text-purple-900">
+      <h1 class="text-2xl font-bold text-center text-purple-900">
         Admin Login
-      </h2>
-
-      <form @submit.prevent="handleLogin" class="flex flex-col gap-4">
+      </h1>
+      <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700"
+          <label class="block mb-2 text-sm font-medium text-gray-700"
             >Password</label
           >
           <input
             v-model="password"
             type="password"
-            class="w-full rounded-sm border border-purple-200 p-2 focus:border-violet-600 focus:outline-none"
+            class="w-full px-4 py-2 border border-purple-200 rounded-sm focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors"
             placeholder="Enter admin password"
             required
           />
         </div>
-
-        <div v-if="error" class="text-sm text-red-600">
+        <div v-if="error" class="text-sm text-red-600 text-center">
           {{ error }}
         </div>
-
         <button
           type="submit"
           :disabled="loading"
-          class="rounded-sm bg-violet-600 px-4 py-2 font-bold text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+          class="w-full px-4 py-2 text-white bg-violet-600 rounded-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 transition-colors"
         >
           {{ loading ? "Logging in..." : "Login" }}
         </button>

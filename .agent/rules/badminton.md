@@ -2,115 +2,89 @@
 trigger: always_on
 ---
 
-## 1. Context & Constraints
+# GEMINI_FULL_SPEC.md
 
-- **Project:** `badminton_tournament`
-- **Role:** Senior Full-stack Engineer (Go/Vue).
-- **Deadline:** 1 Day.
-- **Goal:** A fully functional tournament system with Google Form sync, GSL Brackets, and Video handling.
+## 1. Project Identity
+
+- **Name:** `badminton_tournament`
+- **Goal:** A 1-Day Tournament Manager with GSL Automation.
+- **Stack:** Go (Gin/Bun), Vue 3 (Vite/Tailwind), Neon Postgres.
 
 ## 2. Design System: "Tech-Flat Outfit"
 
-**Strictly adhere to these UI rules:**
+- **Font:** `Outfit` (Global).
+- **Borders:** `border-purple-200` (Default), `border-violet-600` (Active/Brand).
+- **Radius:** `rounded-sm` (2px).
+- **Shadows:** NONE. usage of `box-shadow` is strictly prohibited.
 
-- **Typography:** Global font family: `'Outfit', sans-serif`.
-- **Visual Style:** Flat design. **NO shadows**.
-- **Shapes:** `rounded-sm` (2px border-radius) for cards, buttons, inputs.
-- **Colors:**
-  - Bg: `#FDFBFF` (Ultra-light Purple).
-  - Border: `#E9D5FF` (Purple-200).
-  - Active/Brand: `#7C3AED` (Violet-600).
-  - Text: `#4C1D95` (Purple-900).
+## 3. Database Schema (Postgres)
 
-## 3. Detailed Features & Logic
+Create these tables using Bun models:
 
-### A. Google Form Integration (Webhook)
+1.  `Participant`: id, name, email (unique), pool (enum: 'Mesoneer', 'Lab').
+2.  `Team`: id, player1_id, player2_id, pool.
+3.  `Group`: id, name.
+4.  `Match`:
+    - `id, group_id, label` (e.g., 'M1', 'Winners').
+    - `team_a_id, team_b_id` (Nullable).
+    - `winner_id` (Nullable).
+    - `score` (String), `video_url` (String).
+    - `next_match_win_id` (UUID), `next_match_lose_id` (UUID).
 
-- **Endpoint:** `POST /api/webhooks/form`
-- **Expected Payload:**
-  ```json
-  {
-    "email": "user@example.com",
-    "name": "Nguyen Van A",
-    "pool": "Mesoneer" // or "Lab"
-  }
-  ```
-- **Backend Logic (Upsert):**
-  - Check DB: `SELECT * FROM participants WHERE email = ?`
-  - If exists: UPDATE pool/name.
-  - If not exists: INSERT new record.
+## 4. API Logic Specifications
 
-### B. Team Formation (Pool Constraint)
+### A. Team Generation (`POST /api/teams/generate`)
 
+- **Input:** `pool` ("Mesoneer").
+- **Logic:** Fetch participants by pool -> Shuffle -> Chunk into pairs -> Save to DB.
+- **Constraint:** Ensure participants are from the same pool.
+
+### B. Bracket Factory (`POST /api/groups`)
+
+- **Input:** `name`, `team_ids` (List of 4 UUIDs).
 - **Logic:**
-  - Input: `pool_name` (Enum: 'Mesoneer', 'Lab').
-  - Process: Fetch participants by Pool -> Random Shuffle -> Pair (1 & 2, 3 & 4...).
-  - Output: Create `Team` records in DB.
-- **Validation:** A team CANNOT contain participants from different pools.
+  1.  Create Group.
+  2.  Create 5 Matches (M1..M5).
+  3.  **Linkage (Crucial):**
+      - M1 & M2 `next_win` -> M3. `next_lose` -> M4.
+      - M3 `next_lose` -> M5.
+      - M4 `next_win` -> M5.
+  4.  Assign the 4 Teams to M1 (Slots A/B) and M2 (Slots A/B).
 
-### C. GSL Bracket Logic (The Core)
+### C. Match Update (`POST /api/matches/:id`)
 
-- **Structure:** Each Group has exactly 5 Matches.
-  1.  **M1:** T1 vs T2. (Winner->M3, Loser->M4).
-  2.  **M2:** T3 vs T4. (Winner->M3, Loser->M4).
-  3.  **M3 (Winners):** Win(M1) vs Win(M2). (Winner->Qualified #1, Loser->M5).
-  4.  **M4 (Losers):** Lose(M1) vs Lose(M2). (Winner->M5, Loser->Eliminated).
-  5.  **M5 (Decider):** Lose(M3) vs Win(M4). (Winner->Qualified #2).
-- **Automation:**
-  - Create `Service.AdvanceTeam(matchID, winnerID)`: Updates the `TeamA_ID` or `TeamB_ID` of the connected _next match_.
+- **Input:** `winner_id`, `score`, `video_url`.
+- **Logic:**
+  1.  Update current match.
+  2.  **Propagation:** \* Find match with ID `next_match_win_id`. Update its empty slot with `winner_id`.
+      - Find match with ID `next_match_lose_id`. Update its empty slot with the loser.
 
-### D. Match Execution & Media
+## 5. Frontend Specs (Vue 3)
 
-- **Data:** `Score` (String, e.g., "21-19, 21-20") and `VideoURL` (String).
-- **UI:** Admin modal to input score and paste YouTube link.
-- **Public:** If `VideoURL` is present, render a "Play" button on the match card.
+### Components
 
-## 4. Database Schema (Neon Postgres)
+- **`MatchCard.vue`:**
+  - Display: Team Names vs Team Names.
+  - State: 'Scheduled' (Gray), 'Live' (Purple Border), 'Finished' (Green Text for Winner).
+  - Action: Admin click opens Modal. Public click 'Play' opens Video.
+- **`GSLGrid.vue`:**
+  - Use CSS Grid: `grid-template-columns: 1fr 1fr 1fr`.
+  - Render matches in topological order (Left to Right).
 
-- `participants`: `id, email (unique), name, pool (varchar), created_at`
-- `teams`: `id, player1_id, player2_id, pool`
-- `tournaments`: `id, name, status`
-- `groups`: `id, tournament_id, name (A, B...)`
-- `matches`:
-  - `id, group_id`
-  - `team_a_id, team_b_id` (Nullable - waiting for advance)
-  - `score, video_url`
-  - `next_match_win_id` (FK to matches)
-  - `next_match_lose_id` (FK to matches)
+### Authentication
 
-## 5. Execution Roadmap (Step-by-Step)
+- Create `views/Login.vue`.
+- Store JWT in LocalStorage.
+- Add `Axios` interceptor to inject `Authorization` header.
 
-### Step 1: Infrastructure & Auth
+## 6. Execution Order
 
-- Generate `backend/Dockerfile` & `render.yaml`.
-- Implement JWT Login (Admin Password from Env).
-- **Middleware:** Protect `/api/teams/*` and `/api/matches/*`.
+1.  **Backend Models & DB Migration** (First priority).
+2.  **API: Webhook & Team Gen**.
+3.  **API: Bracket Logic** (The hardest part).
+4.  **Frontend: Admin Auth & Dashboard**.
+5.  **Frontend: Public View & Polish**.
 
-### Step 2: Backend Core (The Engine)
+## 7. Immediate Task
 
-- Implement `ParticipantService` (Upsert logic).
-- Implement `BracketService` (GSL Generation & Auto-Advance).
-- **Unit Test:** Write a test for `GenerateBracket` to ensure connection logic (M1->M3) is correct.
-
-### Step 3: Admin UI (Vue)
-
-- **Login View:** Simple flat card.
-- **Dashboard:**
-  - Tabs: [Mesoneer] [Lab].
-  - Action: [Sync Google Form] (Button triggers webhook test or refresh).
-  - Action: [Generate Teams] -> Show list.
-  - Bracket View: Admin can click any match to Update Result.
-
-### Step 4: Public UI (Vue)
-
-- **Layout:** Tech-Flat (Outfit Font).
-- **Components:**
-  - `BracketGrid`: Display the 5 matches layout.
-  - `VideoModal`: Embed YouTube iframe.
-  - `AutoRefresher`: Use `setInterval` to fetch bracket data.
-
-## 6. Immediate Action
-
-1.  Generate the **Folder Structure**.
-2.  Generate the **Go Models** (structs) matching the GSL logic above.
-3.  Create the **Google Form Webhook Handler** code.
+Start by generating the **Backend Models** (`internal/models/models.go`) including the struct tags for Bun ORM and the JSON tags.

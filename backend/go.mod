@@ -1,4 +1,4 @@
-module github.com/yourname/badminton-manager/backend
+module badminton_tournament/backend
 
 go 1.22
 

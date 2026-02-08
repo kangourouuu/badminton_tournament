@@ -1,25 +1,36 @@
 package api
 
 import (
-	"badminton_tournament/backend/internal/auth"
-	"badminton_tournament/backend/internal/middleware"
-
 	"github.com/gin-gonic/gin"
+	"github.com/uptrace/bun"
 )
 
-func (h *Handler) RegisterRoutes(r *gin.Engine) {
-	// Public
-	r.POST("/api/auth/login", auth.LoginHandler)
-	r.GET("/api/bracket", h.HandleGetBracket)
-	r.GET("/api/teams", h.HandleGetTeams) // Admin uses this too, could be protected but GET is safe-ish
-	r.POST("/api/webhooks/form", h.HandleWebhookForm)
+type Handler struct {
+	DB *bun.DB
+}
 
-	// Protected
+func NewHandler(db *bun.DB) *Handler {
+	return &Handler{DB: db}
+}
+
+func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api")
-	api.Use(middleware.CasbinMiddleware())
+	
+	// Auth
+	api.POST("/auth/login", h.Login)
+	api.POST("/webhooks/form", h.HandleFormWebhook)
+
+	// Public
+	api.GET("/participants", h.ListParticipants)
+	api.GET("/teams", h.ListTeams)
+	api.GET("/groups", h.ListGroups)
+
+	// Admin
+	admin := api.Group("/")
+	admin.Use(AuthMiddleware())
 	{
-		api.POST("/teams/generate", h.HandleGenerateTeams)
-		api.POST("/matches/:id/result", h.HandleMatchResult)
-		api.POST("/bracket/generate", h.HandleGenerateBracket)
+		admin.POST("/teams/generate", h.GenerateTeams)
+		admin.POST("/groups", h.CreateGroup)
+		admin.POST("/matches/:id", h.UpdateMatch)
 	}
 }
