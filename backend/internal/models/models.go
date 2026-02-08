@@ -17,6 +17,7 @@ type Participant struct {
 	bun.BaseModel `bun:"table:participants,alias:p"`
 
 	ID        int64     `bun:"id,pk,autoincrement" json:"id"`
+	Email     string    `bun:"email,unique,notnull" json:"email"`
 	Name      string    `bun:"name,notnull" json:"name"`
 	Pool      Pool      `bun:"pool,notnull" json:"pool"`
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
@@ -48,6 +49,7 @@ type Match struct {
 
 	ScoreA   int `bun:"score_a,default:0" json:"score_a"`
 	ScoreB   int `bun:"score_b,default:0" json:"score_b"`
+	ScoreDetails string `bun:"score_details" json:"score_details"` // "21-19, 15-21, 21-10"
 	WinnerID int64 `bun:"winner_id,nullzero" json:"winner_id"` // Set when finished
 
 	VideoURL string `bun:"video_url" json:"video_url"`

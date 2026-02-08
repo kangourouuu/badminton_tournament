@@ -1,11 +1,8 @@
-package api
-
-import (
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yourname/badminton-manager/backend/internal/models"
+	"badminton_tournament/backend/internal/models"
 )
 
 type GenerateBracketRequest struct {
@@ -101,9 +98,10 @@ func (h *Handler) HandleGenerateBracket(c *gin.Context) {
 }
 
 type MatchResultRequest struct {
-	ScoreA   int    `json:"score_a"`
-	ScoreB   int    `json:"score_b"`
-	VideoURL string `json:"video_url"`
+	ScoreA       int    `json:"score_a"`
+	ScoreB       int    `json:"score_b"`
+	ScoreDetails string `json:"score_details"`
+	VideoURL     string `json:"video_url"`
 }
 
 func (h *Handler) HandleMatchResult(c *gin.Context) {
@@ -127,6 +125,7 @@ func (h *Handler) HandleMatchResult(c *gin.Context) {
 	// Update score
 	match.ScoreA = req.ScoreA
 	match.ScoreB = req.ScoreB
+	match.ScoreDetails = req.ScoreDetails
 	match.VideoURL = req.VideoURL
 
 	// Determine winner

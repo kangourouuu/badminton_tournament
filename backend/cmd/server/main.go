@@ -7,14 +7,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
-	"github.com/yourname/badminton-manager/backend/internal/api"
-	"github.com/yourname/badminton-manager/backend/internal/db"
+	"badminton_tournament/backend/internal/api"
+	"badminton_tournament/backend/internal/auth"
+	"badminton_tournament/backend/internal/db"
 )
 
 func main() {
 	if err := db.Connect(); err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
+	
+	// Init Auth
+	auth.Init()
 
 	r := gin.Default()
 	

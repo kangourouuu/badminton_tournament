@@ -2,116 +2,115 @@
 trigger: always_on
 ---
 
-# GEMINI.md - Project: `badminton_tournament`
+## 1. Context & Constraints
 
-## 1. Context & Role
+- **Project:** `badminton_tournament`
+- **Role:** Senior Full-stack Engineer (Go/Vue).
+- **Deadline:** 1 Day.
+- **Goal:** A fully functional tournament system with Google Form sync, GSL Brackets, and Video handling.
 
-- **Project Name:** `badminton_tournament`
-- **Role:** Senior Full-stack Engineer & DevOps.
-- **Goal:** Build a Tournament Manager in 1 Day.
-- **Stack:** \* **Backend:** Go (Gin, Bun, Postgres).
-  - **Frontend:** Vue 3 (Vite, Tailwind, TypeScript).
-  - **DB:** Neon.tech (Postgres) - Branched (Main/Dev).
-  - **Deploy:** Docker (Render) & Vercel.
+## 2. Design System: "Tech-Flat Outfit"
 
-## 2. Infrastructure as Code (IaC) Requirements
+**Strictly adhere to these UI rules:**
 
-Generate these files immediately upon request:
+- **Typography:** Global font family: `'Outfit', sans-serif`.
+- **Visual Style:** Flat design. **NO shadows**.
+- **Shapes:** `rounded-sm` (2px border-radius) for cards, buttons, inputs.
+- **Colors:**
+  - Bg: `#FDFBFF` (Ultra-light Purple).
+  - Border: `#E9D5FF` (Purple-200).
+  - Active/Brand: `#7C3AED` (Violet-600).
+  - Text: `#4C1D95` (Purple-900).
 
-- **`backend/Dockerfile`:** Multi-stage (Go 1.22 -> Alpine). `CGO_ENABLED=0`.
-- **`render.yaml`:** Define 2 services: `badminton-be-prod` (main branch) and `badminton-be-dev` (dev branch). Use `sync: false` for `DATABASE_URL`.
-- **`frontend/vercel.json`:** SPA Rewrite rules.
+## 3. Detailed Features & Logic
 
-## 3. Design System: "Tech-Flat Outfit" (Strict)
+### A. Google Form Integration (Webhook)
 
-- **Font:** 'Outfit' (Google Font).
-- **Shape:** `rounded-sm` (2px). Sharp edges.
-- **Depth:** **NO SHADOWS**. Use `border-purple-200` to define structure.
-- **Palette:** Background `#FDFBFF` (Pale Purple), Surface `#FFFFFF`, Accent `#7C3AED`.
+- **Endpoint:** `POST /api/webhooks/form`
+- **Expected Payload:**
+  ```json
+  {
+    "email": "user@example.com",
+    "name": "Nguyen Van A",
+    "pool": "Mesoneer" // or "Lab"
+  }
+  ```
+- **Backend Logic (Upsert):**
+  - Check DB: `SELECT * FROM participants WHERE email = ?`
+  - If exists: UPDATE pool/name.
+  - If not exists: INSERT new record.
 
-## 4. Business Logic & Constraints
+### B. Team Formation (Pool Constraint)
 
-### A. Participants & Pools (CRITICAL)
+- **Logic:**
+  - Input: `pool_name` (Enum: 'Mesoneer', 'Lab').
+  - Process: Fetch participants by Pool -> Random Shuffle -> Pair (1 & 2, 3 & 4...).
+  - Output: Create `Team` records in DB.
+- **Validation:** A team CANNOT contain participants from different pools.
 
-- **Data Model:** `Participant` table must have a `pool` field (Enum/String: 'Mesoneer', 'Lab').
-- **Input:** Webhook from Google Forms includes the Pool.
+### C. GSL Bracket Logic (The Core)
 
-### B. Team Formation (The Wheel)
+- **Structure:** Each Group has exactly 5 Matches.
+  1.  **M1:** T1 vs T2. (Winner->M3, Loser->M4).
+  2.  **M2:** T3 vs T4. (Winner->M3, Loser->M4).
+  3.  **M3 (Winners):** Win(M1) vs Win(M2). (Winner->Qualified #1, Loser->M5).
+  4.  **M4 (Losers):** Lose(M1) vs Lose(M2). (Winner->M5, Loser->Eliminated).
+  5.  **M5 (Decider):** Lose(M3) vs Win(M4). (Winner->Qualified #2).
+- **Automation:**
+  - Create `Service.AdvanceTeam(matchID, winnerID)`: Updates the `TeamA_ID` or `TeamB_ID` of the connected _next match_.
 
-- **Constraint:** Teams must be formed **within the same Pool**.
-  - _Logic:_ Admin selects "Spin for Mesoneer" -> System filters participants with `pool='Mesoneer'` -> Randomizes pairs -> Creates Teams.
-  - _Logic:_ Same process for "Lab".
-- **UI:** The Wheel component visually spins and outputs the pairs.
+### D. Match Execution & Media
 
-### C. Bracket & Scoring (GSL Format)
+- **Data:** `Score` (String, e.g., "21-19, 21-20") and `VideoURL` (String).
+- **UI:** Admin modal to input score and paste YouTube link.
+- **Public:** If `VideoURL` is present, render a "Play" button on the match card.
 
-- **Generation:** Admin assigns Teams to Groups. System auto-generates 5 Matches per Group (GSL Structure).
-- **Execution:**
-  - **No Real-time:** Scores are entered only after the match ends (Final Result).
-  - **Video:** Admin inputs `video_url` (YouTube link) along with the score.
-- **Auto-Advance:** When Admin saves the Final Score -> System calculates Winner -> Updates the `team_id` in the next bracket slot automatically.
+## 4. Database Schema (Neon Postgres)
 
-### D. Public Layer
+- `participants`: `id, email (unique), name, pool (varchar), created_at`
+- `teams`: `id, player1_id, player2_id, pool`
+- `tournaments`: `id, name, status`
+- `groups`: `id, tournament_id, name (A, B...)`
+- `matches`:
+  - `id, group_id`
+  - `team_a_id, team_b_id` (Nullable - waiting for advance)
+  - `score, video_url`
+  - `next_match_win_id` (FK to matches)
+  - `next_match_lose_id` (FK to matches)
 
-- Read-only view.
-- Shows the Bracket tree (GSL Layout).
-- **Replay:** If `match.video_url` is not empty, show a "Play" icon (Outline style). Clicking it opens a Modal to watch.
+## 5. Execution Roadmap (Step-by-Step)
 
-## 5. Execution Roadmap
+### Step 1: Infrastructure & Auth
 
-### Phase 1: Scaffolding (Infrastructure)
+- Generate `backend/Dockerfile` & `render.yaml`.
+- Implement JWT Login (Admin Password from Env).
+- **Middleware:** Protect `/api/teams/*` and `/api/matches/*`.
 
-- Generate Monorepo structure: `backend/`, `frontend/`.
-- Generate `Dockerfile`, `render.yaml`.
-- Initialize Go Mod and Vue 3 project (with Tailwind/Outfit config).
+### Step 2: Backend Core (The Engine)
 
-### Phase 2: Backend Core (Go)
+- Implement `ParticipantService` (Upsert logic).
+- Implement `BracketService` (GSL Generation & Auto-Advance).
+- **Unit Test:** Write a test for `GenerateBracket` to ensure connection logic (M1->M3) is correct.
 
-- **Models:** `Tournament`, `Participant` (Pool), `Team`, `Match` (VideoURL).
-- **API:**
-  - `POST /api/webhooks/form`: Ingest participants.
-  - `POST /api/teams/generate`: Input `pool_name` -> Return random pairs.
-  - `POST /api/matches/:id/result`: Input `{score_a, score_b, video_url}` -> Finalize match.
+### Step 3: Admin UI (Vue)
 
-### Phase 3: Frontend UI (Vue)
+- **Login View:** Simple flat card.
+- **Dashboard:**
+  - Tabs: [Mesoneer] [Lab].
+  - Action: [Sync Google Form] (Button triggers webhook test or refresh).
+  - Action: [Generate Teams] -> Show list.
+  - Bracket View: Admin can click any match to Update Result.
 
-- **Admin Dashboard:** \* Tabs for "Mesoneer" vs "Lab".
-  - "Spin Wheel" button (filters by active tab).
-  - Bracket Manager (Enter Score + Paste Video Link).
-- **Public View:**
-  - Flat Design Bracket.
-  - Video Modal (`<iframe src="...">`).
+### Step 4: Public UI (Vue)
 
-### Phase 4: CI/CD
-
-- Create `.github/workflows/pipeline.yml` (Test & Build Check).
+- **Layout:** Tech-Flat (Outfit Font).
+- **Components:**
+  - `BracketGrid`: Display the 5 matches layout.
+  - `VideoModal`: Embed YouTube iframe.
+  - `AutoRefresher`: Use `setInterval` to fetch bracket data.
 
 ## 6. Immediate Action
 
-Start by generating the **Directory Structure**, **Dockerfile**, and **render.yaml** according to these specs so the user can initialize the repo.
-
-# UI AUDIT & REFACTOR REQUEST
-
-**Current Status:** I just checked the frontend, and it looks like raw HTML (Times New Roman, default buttons). The styling is completely missing.
-
-**Task:** Refactor the `PublicView.vue` (and `App.vue` layout) IMMEDIATELY to match our **"Tech-Flat Outfit"** Design System defined in GEMINI.md.
-
-**Specific Requirements to Implement Now:**
-
-1.  **Global Font:** Ensure `font-family: 'Outfit', sans-serif` is applied to the `<body>` or root `div`.
-2.  **Color Theme:**
-    - Change Page Background to `#FDFBFF` (or Tailwind `bg-slate-50`).
-    - Change Text Color to `text-slate-900` / `text-purple-900`.
-3.  **The Header:**
-    - Make it a proper Navbar: `bg-white`, `border-b border-purple-200`, `px-6 py-4`.
-    - Title should be `font-bold text-xl text-purple-900`.
-4.  **The Pool Buttons (Mesoneer/Lab):**
-    - **DO NOT** use default buttons.
-    - Style them as **Flat Tabs**:
-      - **Active:** `bg-violet-600 text-white rounded-sm`.
-      - **Inactive:** `bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 rounded-sm`.
-5.  **The Content:**
-    - Wrap the "Matches are being arranged" text in a **Card Component**: `bg-white border border-purple-200 rounded-sm p-12 text-center`.
-    - Center the card in a `max-w-5xl mx-auto` container.
-
-**Action:** Rewrite the full code for the View component so I can copy-paste it and fix this ugly UI.
+1.  Generate the **Folder Structure**.
+2.  Generate the **Go Models** (structs) matching the GSL logic above.
+3.  Create the **Google Form Webhook Handler** code.

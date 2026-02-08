@@ -1,12 +1,9 @@
-package api
-
-import (
 	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yourname/badminton-manager/backend/internal/models"
+	"badminton_tournament/backend/internal/models"
 )
 
 type GenerateTeamsRequest struct {

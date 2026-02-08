@@ -9,8 +9,9 @@ import (
 )
 
 type WebhookRequest struct {
-	Name string `json:"name"`
-	Pool string `json:"pool"` // "Mesoneer" or "Lab"
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	Pool  string `json:"pool"` // "Mesoneer" or "Lab"
 }
 
 func (h *Handler) HandleWebhookForm(c *gin.Context) {
@@ -33,11 +34,18 @@ func (h *Handler) HandleWebhookForm(c *gin.Context) {
 	}
 
 	p := &models.Participant{
-		Name: req.Name,
-		Pool: pool,
+		Email: req.Email,
+		Name:  req.Name,
+		Pool:  pool,
 	}
 
-	_, err := h.DB.NewInsert().Model(p).Exec(c.Request.Context())
+	// Upsert: On Conflict (Email) Do Update
+	_, err := h.DB.NewInsert().Model(p).
+		On("CONFLICT (email) DO UPDATE").
+		Set("name = EXCLUDED.name").
+		Set("pool = EXCLUDED.pool").
+		Exec(c.Request.Context())
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save participant: %v", err)})
 		return

@@ -7,7 +7,19 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to inject Token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default {
+  login(password) {
+    return api.post("/auth/login", { password });
+  },
   getParticipants(pool) {
     // We didn't create a specific get participants endpoint, but we can if needed.
     // Or just rely on teams for now.
@@ -18,6 +30,9 @@ export default {
     // Actually, the Wheel just needs a list of names for visual effect.
     // I'll stick to 'generate teams' which does the logic on backend.
     return Promise.resolve([]);
+  },
+  getTeams(pool) {
+    return api.get(`/teams?pool=${pool}`);
   },
   generateTeams(pool) {
     return api.post("/teams/generate", { pool });
