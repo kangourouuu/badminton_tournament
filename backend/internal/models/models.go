@@ -78,3 +78,11 @@ type Match struct {
 	TeamB  *Team `bun:"rel:belongs-to,join:team_b_id=id" json:"team_b,omitempty"`
 	Winner *Team `bun:"rel:belongs-to,join:winner_id=id" json:"winner,omitempty"`
 }
+
+type Rule struct {
+	bun.BaseModel `bun:"table:rules,alias:r"`
+
+	ID        uuid.UUID `bun:"id,pk,type:uuid,default:gen_random_uuid()" json:"id"`
+	Content   string    `bun:"content,notnull" json:"content"`
+	UpdatedAt time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp" json:"updated_at"`
+}
