@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick, onUnmounted, computed, watch } from "vue";
 import api from "../services/api";
 import GSLGrid from "../components/GSLGrid.vue";
 import KnockoutGrid from "../components/KnockoutGrid.vue";
@@ -7,22 +7,21 @@ import TheNavbar from "../components/TheNavbar.vue";
 
 const groups = ref([]);
 const loading = ref(true);
-const activeTab = ref(null);
 
-import { computed } from "vue"; // Import computed locally
-
-const activeGroup = computed(() => {
-  return groups.value.find((g) => g.id === activeTab.value);
-});
+const mesoneerGroups = computed(() =>
+  groups.value.filter((g) => g.pool === "Mesoneer" && g.name !== "KNOCKOUT"),
+);
+const labGroups = computed(() =>
+  groups.value.filter((g) => g.pool === "Lab" && g.name !== "KNOCKOUT"),
+);
+const knockoutGroup = computed(() =>
+  groups.value.find((g) => g.name === "KNOCKOUT"),
+);
 
 const fetchData = async () => {
   try {
     const response = await api.get("/groups");
     groups.value = response.data || [];
-    // Set default tab if not set
-    if (groups.value.length > 0 && !activeTab.value) {
-      activeTab.value = groups.value[0].id;
-    }
   } catch (err) {
     console.error("Failed to fetch data", err);
   } finally {
@@ -30,93 +29,187 @@ const fetchData = async () => {
   }
 };
 
+// SVG Logic
+const paths = ref([]);
+const containerRef = ref(null);
+
+const getElementCenter = (id) => {
+  const el = document.getElementById(id);
+  if (!el || !containerRef.value) return null;
+  const rect = el.getBoundingClientRect();
+  const cRect = containerRef.value.getBoundingClientRect();
+  return {
+    x: rect.left - cRect.left + rect.width / 2,
+    y: rect.top - cRect.top + rect.height / 2,
+  };
+};
+
+const updatePaths = async () => {
+  await nextTick();
+  if (!knockoutGroup.value) return;
+
+  const newPaths = [];
+
+  // Helper to find which group a team came from
+  const findSourceGroup = (teamId) => {
+    if (!teamId) return null;
+    for (const g of groups.value) {
+      if (g.name === "KNOCKOUT") continue;
+      // Check if this team won the winners match or decider match
+      // Actually, simplified: check if team is in the group?
+      // Better: Check if team was the winner of M3 or M5 in that group
+      // For now, just check match labels
+      // Or just check if team is in matches?
+      // "Winner of Group" = M3 Winner. "Runner up" = M5 Winner.
+      for (const m of g.matches || []) {
+        if (m.winner_id === teamId) return g.id;
+      }
+    }
+    return null;
+  };
+
+  // Parse Knockout Matches to find input teams
+  const kMatches = knockoutGroup.value.matches || [];
+  const sf1 = kMatches.find((m) => m.label === "SF1");
+  const sf2 = kMatches.find((m) => m.label === "SF2");
+
+  const targets = [
+    { match: sf1, targetId: "knockout-sf1" },
+    { match: sf2, targetId: "knockout-sf2" },
+  ];
+
+  targets.forEach(({ match, targetId }) => {
+    if (!match) return;
+
+    // Connect Team A
+    const groupA = findSourceGroup(match.team_a_id);
+    if (groupA) {
+      const startId = `group-winner-${groupA}`;
+      const p1 = getElementCenter(startId);
+      const p2 = getElementCenter(targetId);
+      if (p1 && p2) {
+        newPaths.push(drawConnector(p1, p2));
+      }
+    }
+
+    // Connect Team B
+    const groupB = findSourceGroup(match.team_b_id);
+    if (groupB) {
+      const startId = `group-winner-${groupB}`;
+      const p1 = getElementCenter(startId);
+      const p2 = getElementCenter(targetId);
+      if (p1 && p2) {
+        newPaths.push(drawConnector(p1, p2));
+      }
+    }
+  });
+
+  paths.value = newPaths;
+};
+
+const drawConnector = (p1, p2) => {
+  // Bezier from P1 to P2
+  // If P1 is Left (x < P2.x), curve right. If P1 is Right, curve left.
+  // Control points: 50% of horizontal distance
+  const cx = (p1.x + p2.x) / 2;
+  return {
+    d: `M ${p1.x} ${p1.y} C ${cx} ${p1.y}, ${cx} ${p2.y}, ${p2.x} ${p2.y}`,
+    color: "#cbd5e1", // slate-300
+  };
+};
+
+watch(groups, updatePaths, { deep: true });
+
 onMounted(() => {
   fetchData();
-  // Optional: Polling
+  window.addEventListener("resize", updatePaths);
   setInterval(fetchData, 30000);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updatePaths);
 });
 </script>
 
 <template>
-  <div class="min-h-screen pb-12 bg-tech-pattern">
+  <div class="min-h-screen pb-12 bg-tech-pattern overflow-x-hidden">
     <TheNavbar />
 
-    <main class="container mx-auto px-4 py-8 space-y-8">
-      <!-- Loading State -->
-      <div v-if="loading" class="text-center py-12">
-        <div
-          class="animate-spin h-8 w-8 border-4 border-violet-500 border-t-transparent rounded-full mx-auto mb-4"
-        ></div>
-        <p
-          class="text-gray-500 uppercase tracking-widest text-xs font-semibold"
-        >
-          Loading Arena...
-        </p>
+    <main class="container-fluid px-4 py-8 relative">
+      <div v-if="loading" class="text-center py-20 text-white">
+        Loading Map...
       </div>
 
-      <!-- Empty State -->
       <div
-        v-else-if="groups.length === 0"
-        class="text-center py-12 text-gray-500 bg-white border border-dashed border-gray-300 rounded-sm"
+        v-else
+        ref="containerRef"
+        class="relative min-h-[800px] flex justify-between gap-8"
       >
-        No active tournaments found.
-      </div>
+        <!-- SVG Layer -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
+          <path
+            v-for="(path, i) in paths"
+            :key="i"
+            :d="path.d"
+            stroke="#64748b"
+            stroke-width="2"
+            fill="none"
+            stroke-opacity="0.4"
+          />
+        </svg>
 
-      <!-- Content -->
-      <div v-else>
-        <!-- Tabs Navigation -->
-        <div
-          class="flex overflow-x-auto gap-2 pb-4 mb-6 border-b border-gray-100 no-scrollbar"
-        >
-          <button
-            v-for="group in groups"
-            :key="group.id"
-            @click="activeTab = group.id"
-            class="px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 border"
-            :class="
-              activeTab === group.id
-                ? 'bg-violet-600 text-white border-violet-600 shadow-md transform scale-105'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-violet-300 hover:text-violet-600'
-            "
+        <!-- Left Column: Mesoneer -->
+        <div class="flex flex-col gap-16 w-1/3 items-center z-10">
+          <h3
+            class="text-xl font-bold text-blue-400 uppercase tracking-widest mb-4"
           >
-            {{ group.name }}
-          </button>
-
-          <!-- Future Knockout Tab Placeholder -->
-          <!-- 
-          <button class="px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider whitespace-nowrap bg-amber-400 text-amber-900 border border-amber-500 shadow-sm relative overflow-hidden">
-             <span class="relative z-10">🏆 Knockout Stage</span>
-          </button> 
-          -->
+            Mesoneer Groups
+          </h3>
+          <div
+            v-for="group in mesoneerGroups"
+            :key="group.id"
+            class="scale-90 origin-top"
+          >
+            <div class="text-center text-white mb-2 font-bold">
+              {{ group.name }}
+            </div>
+            <GSLGrid :matches="group.matches" :group-id="group.id" />
+          </div>
         </div>
 
-        <!-- Active Group Display -->
-        <transition
-          mode="out-in"
-          enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0 translate-y-2"
-          enter-to-class="opacity-100 translate-y-0"
-          leave-active-class="transition duration-150 ease-in"
-          leave-from-class="opacity-100"
-          leave-to-class="opacity-0 translate-y-2"
-        >
-          <div v-if="activeGroup" :key="activeGroup.id" class="space-y-6">
-            <div class="flex items-center justify-center mb-6">
-              <h2
-                class="text-3xl font-black text-violet-900 uppercase tracking-tighter"
-              >
-                {{ activeGroup.name }} Arena
-              </h2>
-            </div>
-
-            <!-- The Bracket -->
-            <KnockoutGrid
-              v-if="activeGroup.name === 'KNOCKOUT'"
-              :matches="activeGroup.matches || []"
-            />
-            <GSLGrid v-else :matches="activeGroup.matches || []" />
+        <!-- Center Column: Knockout -->
+        <div class="flex flex-col justify-center w-1/3 items-center z-10">
+          <h3
+            class="text-xl font-bold text-amber-400 uppercase tracking-widest mb-4"
+          >
+            The Finals
+          </h3>
+          <div v-if="knockoutGroup" class="scale-100">
+            <KnockoutGrid :matches="knockoutGroup.matches" />
           </div>
-        </transition>
+          <div v-else class="text-gray-500 italic">
+            Knockout Stage not yet generated
+          </div>
+        </div>
+
+        <!-- Right Column: Lab -->
+        <div class="flex flex-col gap-16 w-1/3 items-center z-10">
+          <h3
+            class="text-xl font-bold text-emerald-400 uppercase tracking-widest mb-4"
+          >
+            Lab Groups
+          </h3>
+          <div
+            v-for="group in labGroups"
+            :key="group.id"
+            class="scale-90 origin-top"
+          >
+            <div class="text-center text-white mb-2 font-bold">
+              {{ group.name }}
+            </div>
+            <GSLGrid :matches="group.matches" :group-id="group.id" />
+          </div>
+        </div>
       </div>
     </main>
   </div>

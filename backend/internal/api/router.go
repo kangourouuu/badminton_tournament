@@ -31,6 +31,9 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	admin.Use(AuthMiddleware())
 	{
 		admin.POST("/teams/generate", h.GenerateTeams)
+		admin.POST("/teams", h.CreateTeam)
+		admin.PUT("/teams/:id", h.UpdateTeam)
+		admin.DELETE("/teams/:id", h.DeleteTeam)
 		admin.POST("/groups", h.CreateGroup)
 		admin.POST("/matches/:id", h.UpdateMatch)
 		admin.POST("/tournaments/knockout", h.GenerateKnockout)

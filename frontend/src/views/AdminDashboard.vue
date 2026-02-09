@@ -7,6 +7,8 @@ import GSLGrid from "../components/GSLGrid.vue";
 import KnockoutGrid from "../components/KnockoutGrid.vue";
 import ScoreModal from "../components/ScoreModal.vue";
 
+import TeamManager from "../components/TeamManager.vue";
+
 const router = useRouter();
 const activeTab = ref("brackets"); // 'data', 'teams', 'brackets'
 
@@ -23,6 +25,7 @@ const selectedMatch = ref(null);
 
 // Create Group Form
 const newGroupName = ref("");
+const selectedPool = ref("Mesoneer"); // Default
 const selectedTeamIds = ref([]);
 
 // -- INIT --
@@ -64,9 +67,8 @@ const onTeamsGenerated = () => {
 
 // -- GROUPS --
 const availableTeams = computed(() => {
-  // In a real app, filter out teams already in a group.
-  // For now, just show all teams sorted by creation
-  return teams.value;
+  // Filter by selected pool
+  return teams.value.filter((t) => t.pool === selectedPool.value);
 });
 
 const createGroup = async () => {
@@ -75,6 +77,7 @@ const createGroup = async () => {
   try {
     await api.post("/groups", {
       name: newGroupName.value,
+      pool: selectedPool.value,
       tournament_id: "00000000-0000-0000-0000-000000000000", // Placeholder or fetch actual
       team_ids: selectedTeamIds.value,
     });
@@ -83,7 +86,9 @@ const createGroup = async () => {
     selectedTeamIds.value = [];
     fetchData();
   } catch (err) {
-    alert("Failed to create group: " + err.message);
+    alert(
+      "Failed to create group: " + (err.response?.data?.error || err.message),
+    );
   }
 };
 
@@ -191,6 +196,17 @@ const generateKnockout = async () => {
           Team Generation
         </button>
         <button
+          @click="activeTab = 'teams'"
+          :class="
+            activeTab === 'teams'
+              ? 'bg-violet-100 text-violet-700 border-violet-200'
+              : 'text-gray-500 hover:bg-gray-50 border-transparent'
+          "
+          class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
+        >
+          Teams
+        </button>
+        <button
           @click="activeTab = 'data'"
           :class="
             activeTab === 'data'
@@ -275,6 +291,11 @@ const generateKnockout = async () => {
 
       <!-- Tab: TEAMS -->
       <div v-show="activeTab === 'teams'" class="space-y-8">
+        <!-- Manual Management -->
+        <TeamManager />
+
+        <hr class="border-gray-200" />
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Wheel 1: Mesoneer -->
           <div class="space-y-4">
@@ -410,13 +431,39 @@ const generateKnockout = async () => {
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Pool</label
+            >
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2">
+                <input
+                  type="radio"
+                  v-model="selectedPool"
+                  value="Mesoneer"
+                  class="text-violet-600 focus:ring-violet-500"
+                />
+                <span class="text-sm">Mesoneer</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input
+                  type="radio"
+                  v-model="selectedPool"
+                  value="Lab"
+                  class="text-violet-600 focus:ring-violet-500"
+                />
+                <span class="text-sm">Lab</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
               >Select 4 Teams</label
             >
             <div
               class="h-48 overflow-y-auto border border-gray-200 rounded-sm p-2 space-y-1 bg-gray-50"
             >
               <label
-                v-for="team in teams"
+                v-for="team in availableTeams"
                 :key="team.id"
                 class="flex items-center space-x-2 p-2 hover:bg-white rounded-sm cursor-pointer transition-colors"
               >
