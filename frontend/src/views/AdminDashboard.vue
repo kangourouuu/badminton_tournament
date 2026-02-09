@@ -132,7 +132,7 @@ const generateKnockout = async () => {
   loading.value = true;
   try {
     await api.post("/tournaments/knockout", {
-      tournament_id: tournament.value.id,
+      tournament_id: "00000000-0000-0000-0000-000000000000",
     });
     alert("Knockout bracket generated!");
     await fetchData();

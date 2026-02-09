@@ -77,7 +77,7 @@ const onMatchClick = (match) => {
             :match="final"
             :is-admin="isAdmin"
             @click="onMatchClick"
-            class="border-amber-400 ring-4 ring-amber-50 shadow-xl transform scale-110"
+            class="border-amber-400 ring-4 ring-amber-50 transform scale-110"
           />
         </div>
 
