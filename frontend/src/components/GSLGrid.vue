@@ -57,7 +57,7 @@ const onMatchClick = (match) => {
       </div>
 
       <!-- Column 2: Winners & Losers -->
-      <div class="flex flex-col gap-24 relative">
+      <div class="flex flex-col gap-12 relative">
         <!-- Larger gap to align with M1/M2 center? or just space out -->
         <div v-if="winners" class="match-node match-m3 relative">
           <div
