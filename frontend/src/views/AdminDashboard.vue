@@ -237,13 +237,7 @@ const generateKnockout = async () => {
         </div>
 
         <div v-for="group in groups" :key="group.id" class="space-y-4">
-          <div class="flex items-center gap-3">
-            <h3 class="text-xl font-bold text-gray-800">{{ group.name }}</h3>
-            <span
-              class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full"
-              >{{ group.id.split("-")[0] }}</span
-            >
-          </div>
+          <h3 class="text-xl font-bold text-gray-800">{{ group.name }}</h3>
           <KnockoutGrid
             v-if="group.name === 'KNOCKOUT'"
             :matches="group.matches || []"

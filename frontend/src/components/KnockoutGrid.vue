@@ -29,7 +29,7 @@ const onMatchClick = (match) => {
 <template>
   <div class="w-full overflow-x-auto pb-4">
     <div
-      class="grid grid-cols-2 gap-16 items-center bg-white p-12 pb-32 rounded-lg border border-purple-50 min-w-[800px] relative"
+      class="grid grid-cols-2 gap-16 items-center pb-32 min-w-[800px] relative"
     >
       <!-- Semi Finals Column -->
       <div class="flex flex-col gap-24 relative z-10">
