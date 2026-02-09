@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
   match: {
@@ -13,6 +13,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["click", "play-video"]);
+
+const showCopiedToast = ref(false);
 
 // Determine status
 const status = computed(() => {
@@ -49,11 +51,31 @@ const isWinner = (teamId) => {
   return status.value === "finished" && props.match.winner_id === teamId;
 };
 
-const handleClick = () => {
+const handleClick = async () => {
   if (props.isAdmin) {
     emit("click", props.match);
   } else if (props.match.video_url) {
-    window.open(props.match.video_url, "_blank"); // Simple video handler for now
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(props.match.video_url);
+      showCopiedToast.value = true;
+      setTimeout(() => (showCopiedToast.value = false), 2000);
+      // Also open behavior? Requirement says "Copy... AND show Toast".
+      // "Alternatively... Play Icon... opens link".
+      // Let's do both: default click copies.
+      // We already have a play icon overlay that opens link on click?
+      // The existing overlay does NOTHING but show an icon.
+    } catch (err) {
+      console.error("Failed to copy", err);
+      // Fallback or just ignore
+    }
+  }
+};
+
+const openVideo = (e) => {
+  e.stopPropagation(); // Prevent card click
+  if (props.match.video_url) {
+    window.open(props.match.video_url, "_blank");
   }
 };
 </script>
@@ -147,13 +169,14 @@ const handleClick = () => {
       </div>
     </div>
 
-    <!-- Video Overlay -->
+    <!-- Video Overlay (Play Button) -->
     <div
       v-if="match.video_url && !isAdmin"
+      @click="openVideo"
       class="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
     >
       <div
-        class="bg-white rounded-full p-3 shadow-lg text-violet-600 transform scale-110"
+        class="bg-white rounded-full p-3 shadow-lg text-violet-600 transform scale-110 hover:scale-125 transition-transform"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -167,6 +190,18 @@ const handleClick = () => {
             clip-rule="evenodd"
           />
         </svg>
+      </div>
+    </div>
+
+    <!-- Copied Toast -->
+    <div
+      v-if="showCopiedToast"
+      class="absolute inset-0 flex items-end justify-center pb-2 pointer-events-none z-20"
+    >
+      <div
+        class="bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-md opacity-90"
+      >
+        Link copied!
       </div>
     </div>
   </div>
