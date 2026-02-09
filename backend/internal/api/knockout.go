@@ -2,11 +2,9 @@ package api
 
 import (
 	"net/http"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/uptrace/bun"
 	"badminton_tournament/backend/internal/models"
 )
 
