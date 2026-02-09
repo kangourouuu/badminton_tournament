@@ -269,7 +269,7 @@ const saveRules = async () => {
       <!-- Tab: DATA -->
       <div v-show="activeTab === 'data'" class="space-y-6">
         <div
-          class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+          class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden overflow-x-auto"
         >
           <table class="w-full text-sm text-left">
             <thead
