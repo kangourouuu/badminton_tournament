@@ -29,7 +29,7 @@ const onMatchClick = (match) => {
 <template>
   <div class="w-full overflow-x-auto pb-4">
     <div
-      class="grid grid-cols-2 gap-16 items-center bg-white p-12 rounded-lg border border-purple-50 min-w-[800px] relative"
+      class="grid grid-cols-2 gap-16 items-center bg-white p-12 pb-32 rounded-lg border border-purple-50 min-w-[800px] relative"
     >
       <!-- Semi Finals Column -->
       <div class="flex flex-col gap-24 relative z-10">
@@ -63,7 +63,7 @@ const onMatchClick = (match) => {
       </div>
 
       <!-- Finals Column -->
-      <div class="flex flex-col gap-12 relative z-10">
+      <div class="flex flex-col gap-12 relative z-10 justify-center h-full">
         <div v-if="final" class="relative">
           <!-- Incoming Connector Stub -->
           <div class="absolute top-1/2 -left-8 w-8 h-0.5 bg-gray-200"></div>
@@ -80,20 +80,21 @@ const onMatchClick = (match) => {
             class="border-amber-400 ring-4 ring-amber-50"
           />
         </div>
+      </div>
 
-        <div v-if="bronze" class="mt-8 opacity-80">
-          <div
-            class="text-xs text-gray-400 mb-2 uppercase tracking-wider font-bold"
-          >
-            🥉 Bronze Match
-          </div>
-          <MatchCard
-            :match="bronze"
-            :is-admin="isAdmin"
-            @click="onMatchClick"
-            class="border-dashed"
-          />
+      <!-- Bronze Match (Absolute) -->
+      <div v-if="bronze" class="absolute bottom-8 right-12 z-10 w-64">
+        <div
+          class="text-xs text-gray-400 mb-2 uppercase tracking-wider font-bold text-center"
+        >
+          🥉 Bronze Match
         </div>
+        <MatchCard
+          :match="bronze"
+          :is-admin="isAdmin"
+          @click="onMatchClick"
+          class="border-dashed scale-90 origin-top"
+        />
       </div>
     </div>
   </div>
