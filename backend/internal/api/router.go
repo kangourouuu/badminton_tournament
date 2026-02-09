@@ -35,6 +35,4 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		admin.POST("/matches/:id", h.UpdateMatch)
 		admin.PUT("/admin/rules", h.UpdateRules)
 	}
-		admin.PUT("/admin/rules", h.UpdateRules)
-	}
 }
