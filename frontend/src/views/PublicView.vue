@@ -9,7 +9,7 @@ const loading = ref(true);
 const fetchData = async () => {
   try {
     const response = await api.get("/groups");
-    groups.value = response.data;
+    groups.value = response.data || [];
   } catch (err) {
     console.error("Failed to fetch data", err);
   } finally {
