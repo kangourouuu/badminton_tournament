@@ -11,6 +11,7 @@ import (
 
 type CreateGroupRequest struct {
 	Name          string      `json:"name"`
+	Pool          string      `json:"pool"` // "Mesoneer" or "Lab"
 	TournamentID  uuid.UUID   `json:"tournament_id"`
 	TeamIDs       []uuid.UUID `json:"team_ids"` // Expect exactly 4 IDs
 }
@@ -26,10 +27,34 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Group must have exactly 4 teams"})
 		return
 	}
+	if req.Pool == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Pool is required (Mesoneer or Lab)"})
+		return
+	}
 
 	ctx := c.Request.Context()
 
-	// 1. Validate: Ensure teams are not already in an active match
+	// 1. Validate Teams: Must be in same Pool and not busy
+	// Fetch teams to check pool
+	var teams []models.Team
+	if err := h.DB.NewSelect().Model(&teams).Where("id IN (?)", bun.In(req.TeamIDs)).Scan(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
+		return
+	}
+	
+	if len(teams) != 4 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "One or more teams not found"})
+		return
+	}
+
+	for _, team := range teams {
+		if team.Pool != req.Pool {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "All teams must belong to the selected Pool (" + req.Pool + ")"})
+			return
+		}
+	}
+
+	// Check if already in active match
 	count, err := h.DB.NewSelect().Model((*models.Match)(nil)).
 		Where("team_a_id IN (?) OR team_b_id IN (?)", bun.In(req.TeamIDs), bun.In(req.TeamIDs)).
 		Count(ctx)
@@ -46,6 +71,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 	group := &models.Group{
 		TournamentID: req.TournamentID,
 		Name:         req.Name,
+		Pool:         req.Pool,
 	}
 	_, err = h.DB.NewInsert().Model(group).Exec(ctx)
 	if err != nil {

@@ -50,6 +50,7 @@ type Group struct {
 	ID           uuid.UUID `bun:"id,pk,type:uuid,default:gen_random_uuid()" json:"id"`
 	TournamentID uuid.UUID `bun:"tournament_id,type:uuid" json:"tournament_id"`
 	Name         string    `bun:"name,notnull" json:"name"` // "Group A"
+	Pool         string    `bun:"pool,notnull" json:"pool"` // "Mesoneer" or "Lab"
 
 	// Relations
 	Matches []*Match `bun:"rel:has-many,join:id=group_id" json:"matches,omitempty"`

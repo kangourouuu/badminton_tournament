@@ -11,6 +11,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  groupId: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["match-click"]);
@@ -57,7 +61,11 @@ const onMatchClick = (match) => {
       <!-- Column 2: Winners & Losers -->
       <div class="flex flex-col gap-12 relative">
         <!-- Larger gap to align with M1/M2 center? or just space out -->
-        <div v-if="winners" class="match-node match-m3 relative">
+        <div
+          v-if="winners"
+          :id="groupId ? `group-winner-${groupId}` : undefined"
+          class="match-node match-m3 relative"
+        >
           <div
             class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
           >

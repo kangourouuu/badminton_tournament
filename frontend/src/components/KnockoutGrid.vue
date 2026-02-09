@@ -33,7 +33,7 @@ const onMatchClick = (match) => {
     >
       <!-- Semi Finals Column -->
       <div class="flex flex-col gap-24 relative z-10">
-        <div v-if="sf1" class="relative">
+        <div v-if="sf1" id="knockout-sf1" class="relative">
           <div
             class="text-xs text-purple-600 mb-2 uppercase tracking-wider font-bold"
           >
@@ -47,7 +47,7 @@ const onMatchClick = (match) => {
           ></div>
         </div>
 
-        <div v-if="sf2" class="relative">
+        <div v-if="sf2" id="knockout-sf2" class="relative">
           <div
             class="text-xs text-purple-600 mb-2 uppercase tracking-wider font-bold"
           >
