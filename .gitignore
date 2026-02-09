@@ -16,3 +16,4 @@
 # Vite
 /frontend/dist/
 /frontend/.vite/
+*.md
