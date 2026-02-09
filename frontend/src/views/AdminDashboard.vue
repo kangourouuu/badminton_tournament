@@ -132,7 +132,7 @@ const generateKnockout = async () => {
   loading.value = true;
   try {
     await api.post("/tournaments/knockout", {
-      tournament_id: tournament.value.id,
+      tournament_id: "00000000-0000-0000-0000-000000000000",
     });
     alert("Knockout bracket generated!");
     await fetchData();
@@ -165,49 +165,49 @@ const generateKnockout = async () => {
     </nav>
 
     <!-- Tabs -->
-    <div class="bg-white border-b border-gray-200 px-6 pt-2">
-      <div class="flex space-x-8">
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+      <div class="flex space-x-2 overflow-x-auto no-scrollbar">
         <button
           @click="activeTab = 'brackets'"
-          :class="{
-            'border-violet-600 text-violet-700': activeTab === 'brackets',
-            'border-transparent text-gray-500 hover:text-gray-700':
-              activeTab !== 'brackets',
-          }"
-          class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors"
+          :class="
+            activeTab === 'brackets'
+              ? 'bg-violet-100 text-violet-700 border-violet-200'
+              : 'text-gray-500 hover:bg-gray-50 border-transparent'
+          "
+          class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
         >
           Brackets & Matches
         </button>
         <button
           @click="activeTab = 'teams'"
-          :class="{
-            'border-violet-600 text-violet-700': activeTab === 'teams',
-            'border-transparent text-gray-500 hover:text-gray-700':
-              activeTab !== 'teams',
-          }"
-          class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors"
+          :class="
+            activeTab === 'teams'
+              ? 'bg-violet-100 text-violet-700 border-violet-200'
+              : 'text-gray-500 hover:bg-gray-50 border-transparent'
+          "
+          class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
         >
           Team Generation
         </button>
         <button
           @click="activeTab = 'data'"
-          :class="{
-            'border-violet-600 text-violet-700': activeTab === 'data',
-            'border-transparent text-gray-500 hover:text-gray-700':
-              activeTab !== 'data',
-          }"
-          class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors"
+          :class="
+            activeTab === 'data'
+              ? 'bg-violet-100 text-violet-700 border-violet-200'
+              : 'text-gray-500 hover:bg-gray-50 border-transparent'
+          "
+          class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
         >
           Participants Data
         </button>
         <button
           @click="activeTab = 'rules'"
-          :class="{
-            'border-violet-600 text-violet-700': activeTab === 'rules',
-            'border-transparent text-gray-500 hover:text-gray-700':
-              activeTab !== 'rules',
-          }"
-          class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors"
+          :class="
+            activeTab === 'rules'
+              ? 'bg-violet-100 text-violet-700 border-violet-200'
+              : 'text-gray-500 hover:bg-gray-50 border-transparent'
+          "
+          class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
         >
           Tournament Rules
         </button>

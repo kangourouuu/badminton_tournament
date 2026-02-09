@@ -101,17 +101,12 @@ onMounted(() => {
           leave-to-class="opacity-0 translate-y-2"
         >
           <div v-if="activeGroup" :key="activeGroup.id" class="space-y-6">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-center mb-6">
               <h2
-                class="text-2xl font-black text-violet-900 uppercase tracking-tighter"
+                class="text-3xl font-black text-violet-900 uppercase tracking-tighter"
               >
                 {{ activeGroup.name }} Arena
               </h2>
-              <div
-                class="text-xs font-mono text-gray-400 bg-white px-2 py-1 rounded border border-gray-100"
-              >
-                Group ID: {{ activeGroup.id.substring(0, 8) }}...
-              </div>
             </div>
 
             <!-- The Bracket -->
