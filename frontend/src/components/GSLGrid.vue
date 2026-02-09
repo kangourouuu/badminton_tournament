@@ -33,9 +33,7 @@ const onMatchClick = (match) => {
 
 <template>
   <div class="w-full overflow-x-auto pb-4">
-    <div
-      class="grid grid-cols-3 gap-8 items-center bg-white p-6 rounded-lg border border-purple-50 min-w-[900px]"
-    >
+    <div class="grid grid-cols-3 gap-12 items-center min-w-[900px]">
       <!-- Column 1: Opening Matches -->
       <div class="flex flex-col gap-12 relative">
         <div v-if="m1" class="match-node match-m1 relative">

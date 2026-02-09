@@ -1,10 +1,15 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
+import { marked } from "marked";
 import api from "../services/api";
 import TheNavbar from "../components/TheNavbar.vue";
 
 const rules = ref("");
 const loading = ref(true);
+
+const compiledRules = computed(() => {
+  return marked(rules.value);
+});
 
 onMounted(async () => {
   try {
@@ -82,9 +87,8 @@ onMounted(async () => {
 
           <div
             class="prose prose-purple max-w-none whitespace-pre-wrap text-slate-600 leading-relaxed"
-          >
-            {{ rules }}
-          </div>
+            v-html="compiledRules"
+          ></div>
         </div>
       </div>
     </main>
