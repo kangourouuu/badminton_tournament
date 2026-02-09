@@ -29,12 +29,25 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// 1. Create Group
+	// 1. Validate: Ensure teams are not already in an active match
+	count, err := h.DB.NewSelect().Model((*models.Match)(nil)).
+		Where("team_a_id IN (?) OR team_b_id IN (?)", bun.In(req.TeamIDs), bun.In(req.TeamIDs)).
+		Count(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate team availability"})
+		return
+	}
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "One or more selected teams are already competing in another group"})
+		return
+	}
+
+	// 2. Create Group
 	group := &models.Group{
 		TournamentID: req.TournamentID,
 		Name:         req.Name,
 	}
-	_, err := h.DB.NewInsert().Model(group).Exec(ctx)
+	_, err = h.DB.NewInsert().Model(group).Exec(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create group"})
 		return
