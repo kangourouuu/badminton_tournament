@@ -1,12 +1,12 @@
-FROM golang:1.22-alpine AS builder
+FROM docker.io/library/golang:1.22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache git ca-certificates
 
-# Use standard Go Proxy for reliability (Render/Singapore should handle this fine)
-# Fallback to direct if proxy fails
-ENV GOPROXY=https://proxy.golang.org,direct
-# Disable SumDB providing checksum validation is hindering the build (iasm issue)
+ENV GOPROXY=direct
 ENV GOSUMDB=off
+ENV GONOSUMDB=*
+ENV GOINSECURE=*
+ENV GIT_SSL_NO_VERIFY=true
 
 # 1. Copy EVERYTHING first
 COPY . .

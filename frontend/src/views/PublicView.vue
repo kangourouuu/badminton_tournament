@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import api from "../services/api";
 import GSLGrid from "../components/GSLGrid.vue";
+import TheNavbar from "../components/TheNavbar.vue";
 
 const groups = ref([]);
 const loading = ref(true);
@@ -25,23 +26,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-12">
-    <!-- Header -->
-    <header class="bg-white border-b border-purple-100 sticky top-0 z-10">
-      <div
-        class="container mx-auto px-4 py-4 flex justify-between items-center"
-      >
-        <h1 class="text-2xl font-bold text-violet-800 tracking-tight">
-          Badminton Tournament
-        </h1>
-        <router-link
-          to="/login"
-          class="text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors"
-        >
-          Admin Access
-        </router-link>
-      </div>
-    </header>
+  <div class="min-h-screen pb-12 bg-gray-50">
+    <TheNavbar />
 
     <main class="container mx-auto px-4 py-8 space-y-12">
       <div v-if="loading" class="text-center py-12 text-gray-500 animate-pulse">

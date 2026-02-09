@@ -28,16 +28,17 @@ const selectedTeamIds = ref([]);
 const fetchData = async () => {
   loading.value = true;
   try {
-    const [pRes, tRes, gRes] = await Promise.all([
+    const [pRes, tRes, gRes, rRes] = await Promise.all([
       api.get("/participants"),
       api.get("/teams"),
       api.get("/groups"),
+      api.get("/public/rules"),
     ]);
 
     participants.value = pRes.data || [];
     teams.value = tRes.data || [];
     groups.value = gRes.data || [];
-
+    rulesContent.value = rRes.data.content || "";
   } catch (err) {
     console.error("Fetch error", err);
     if (err.response?.status === 401) {
@@ -104,6 +105,22 @@ const saveMatchResult = async (data) => {
     alert("Failed to update match: " + err.message);
   }
 };
+
+// -- RULES --
+const rulesContent = ref("");
+const savingRules = ref(false);
+
+const saveRules = async () => {
+  savingRules.value = true;
+  try {
+    await api.put("/admin/rules", { content: rulesContent.value });
+    alert("Rules saved successfully!");
+  } catch (err) {
+    alert("Failed to save rules: " + err.message);
+  } finally {
+    savingRules.value = false;
+  }
+};
 </script>
 
 <template>
@@ -161,6 +178,17 @@ const saveMatchResult = async (data) => {
           class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors"
         >
           Participants Data
+        </button>
+        <button
+          @click="activeTab = 'rules'"
+          :class="{
+            'border-violet-600 text-violet-700': activeTab === 'rules',
+            'border-transparent text-gray-500 hover:text-gray-700':
+              activeTab !== 'rules',
+          }"
+          class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors"
+        >
+          Tournament Rules
         </button>
       </div>
     </div>
@@ -282,6 +310,34 @@ const saveMatchResult = async (data) => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Tab: RULES -->
+      <div v-show="activeTab === 'rules'" class="space-y-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">
+            Edit Tournament Rules
+          </h3>
+          <p class="text-sm text-gray-500 mb-4">
+            You can use simple text. It will be displayed as-is on the public
+            page.
+          </p>
+          <textarea
+            v-model="rulesContent"
+            rows="15"
+            class="w-full border border-gray-300 rounded-sm p-4 font-mono text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+            placeholder="Enter rules here..."
+          ></textarea>
+          <div class="mt-4 flex justify-end">
+            <button
+              @click="saveRules"
+              :disabled="savingRules"
+              class="px-6 py-2 bg-violet-600 text-white font-medium rounded-sm hover:bg-violet-700 disabled:opacity-50 transition-colors"
+            >
+              {{ savingRules ? "Saving..." : "Save Rules" }}
+            </button>
+          </div>
         </div>
       </div>
     </main>

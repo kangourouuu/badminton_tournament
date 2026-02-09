@@ -23,7 +23,9 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	// Public
 	api.GET("/participants", h.ListParticipants)
 	api.GET("/teams", h.ListTeams)
+	api.GET("/teams", h.ListTeams)
 	api.GET("/groups", h.ListGroups)
+	api.GET("/public/rules", h.GetRules)
 
 	// Admin
 	admin := api.Group("/")
@@ -31,6 +33,8 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	{
 		admin.POST("/teams/generate", h.GenerateTeams)
 		admin.POST("/groups", h.CreateGroup)
+		admin.POST("/groups", h.CreateGroup)
 		admin.POST("/matches/:id", h.UpdateMatch)
+		admin.PUT("/admin/rules", h.UpdateRules)
 	}
 }
