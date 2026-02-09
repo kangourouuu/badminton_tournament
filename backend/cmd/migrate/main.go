@@ -17,5 +17,15 @@ func main() {
 		log.Fatalf("failed to create schema: %v", err)
 	}
 
-	fmt.Println("Schema created successfully")
+	// MANUAL MIGRATION: Ensure 'pool' columns exist
+	// Bun's CreateSchema doesn't alter existing tables, so we do it manually here for the "v2" update.
+	_, err := db.DB.Exec(`
+		ALTER TABLE teams ADD COLUMN IF NOT EXISTS pool TEXT DEFAULT '';
+		ALTER TABLE groups ADD COLUMN IF NOT EXISTS pool TEXT DEFAULT '';
+	`)
+	if err != nil {
+		log.Printf("Warning: failed to alter tables: %v", err)
+	}
+
+	fmt.Println("Schema created and updated successfully")
 }
