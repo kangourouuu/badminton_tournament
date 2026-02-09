@@ -57,53 +57,75 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 
 		// Propagate Winner
 		if match.NextMatchWinID != uuid.Nil {
-			h.propagateToMatch(ctx, match.NextMatchWinID, req.WinnerID)
+			h.propagateToMatch(ctx, match.NextMatchWinID, req.WinnerID, match.Label, "win")
 		}
 
 		// Propagate Loser
 		if match.NextMatchLoseID != uuid.Nil && loserID != uuid.Nil {
-			h.propagateToMatch(ctx, match.NextMatchLoseID, loserID)
+			h.propagateToMatch(ctx, match.NextMatchLoseID, loserID, match.Label, "lose")
 		}
 	}
 
 	c.JSON(http.StatusOK, match)
 }
 
-func (h *Handler) propagateToMatch(ctx context.Context, matchID, teamID uuid.UUID) error {
+func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UUID, sourceLabel, outcome string) error {
 	// Find target match
 	var target models.Match
-	err := h.DB.NewSelect().Model(&target).Where("id = ?", matchID).Scan(ctx)
+	err := h.DB.NewSelect().Model(&target).Where("id = ?", targetID).Scan(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Check which slot is empty or if we are overwriting
-	// Logic: If TeamA is empty, fill it. Else if TeamB is empty, fill it.
-	// If both full, maybe we are correcting a mistake? For now, fill first empty.
-	
-	cols := []string{}
+	col := ""
 
-	if target.TeamAID == uuid.Nil {
-		target.TeamAID = teamID
-		cols = append(cols, "team_a_id")
-	} else if target.TeamBID == uuid.Nil {
-		target.TeamBID = teamID
-		cols = append(cols, "team_b_id")
-	} else {
-		// Both full. In a real app, maybe check if one of them was the previous winner/loser from this source?
-		// For MVP, we stick to "First Empty Slot".
-		// Or maybe force overwrite? Let's assume the flow is clean.
-		// If Admin made a mistake and re-updates, we might have an issue.
-		// Detailed logic:
-		// We need to know WHICH slot came from THIS match. 
-		// But 'Match' struct doesn't strictly store "SourceMatchID".
-		// Simple fix: If target has TeamA, check if TeamA came from here? Hard to track.
-		// MVP: Just fill TeamA if empty, else TeamB.
-		return nil 
+	// Deterministic GSL Logic
+	// M1 -> Win -> M3 (Slot A)
+	// M2 -> Win -> M3 (Slot B)
+	// M1 -> Lose -> M4 (Slot A)
+	// M2 -> Lose -> M4 (Slot B)
+	// M3 -> Lose -> M5 (Slot A)
+	// M4 -> Win -> M5 (Slot B)
+
+	if target.Label == "Winners" { // M3
+		if sourceLabel == "M1" {
+			col = "team_a_id"
+			target.TeamAID = teamID
+		} else if sourceLabel == "M2" {
+			col = "team_b_id"
+			target.TeamBID = teamID
+		}
+	} else if target.Label == "Losers" { // M4
+		if sourceLabel == "M1" {
+			col = "team_a_id"
+			target.TeamAID = teamID
+		} else if sourceLabel == "M2" {
+			col = "team_b_id"
+			target.TeamBID = teamID
+		}
+	} else if target.Label == "Decider" { // M5
+		if sourceLabel == "Winners" { // From M3 Loser
+			col = "team_a_id"
+			target.TeamAID = teamID
+		} else if sourceLabel == "Losers" { // From M4 Winner
+			col = "team_b_id"
+			target.TeamBID = teamID
+		}
 	}
 
-	if len(cols) > 0 {
-		_, err = h.DB.NewUpdate().Model(&target).Column(cols...).WherePK().Exec(ctx)
+	// Fallback to "First Empty" if label logic doesn't match (e.g. custom bracket)
+	if col == "" {
+		if target.TeamAID == uuid.Nil {
+			target.TeamAID = teamID
+			col = "team_a_id"
+		} else if target.TeamBID == uuid.Nil {
+			target.TeamBID = teamID
+			col = "team_b_id"
+		}
+	}
+
+	if col != "" {
+		_, err = h.DB.NewUpdate().Model(&target).Column(col).WherePK().Exec(ctx)
 		return err
 	}
 	return nil
