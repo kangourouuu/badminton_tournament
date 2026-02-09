@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import api from "../services/api";
 import TheWheel from "../components/TheWheel.vue";
 import GSLGrid from "../components/GSLGrid.vue";
+import KnockoutGrid from "../components/KnockoutGrid.vue";
 import ScoreModal from "../components/ScoreModal.vue";
 
 const router = useRouter();
@@ -243,7 +244,14 @@ const generateKnockout = async () => {
               >{{ group.id.split("-")[0] }}</span
             >
           </div>
+          <KnockoutGrid
+            v-if="group.name === 'KNOCKOUT'"
+            :matches="group.matches || []"
+            :is-admin="true"
+            @match-click="openScoreModal"
+          />
           <GSLGrid
+            v-else
             :matches="group.matches || []"
             :is-admin="true"
             @match-click="openScoreModal"
