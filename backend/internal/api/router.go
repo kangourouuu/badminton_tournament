@@ -33,6 +33,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		admin.POST("/teams/generate", h.GenerateTeams)
 		admin.POST("/groups", h.CreateGroup)
 		admin.POST("/matches/:id", h.UpdateMatch)
+		admin.POST("/tournaments/knockout", h.GenerateKnockout)
 		admin.PUT("/admin/rules", h.UpdateRules)
 	}
 }
