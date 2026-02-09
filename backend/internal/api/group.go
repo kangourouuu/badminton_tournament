@@ -73,7 +73,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		Name:         req.Name,
 		Pool:         req.Pool,
 	}
-	_, err = h.DB.NewInsert().Model(group).Exec(ctx)
+	_, err = h.DB.NewInsert().Model(group).Returning("*").Exec(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create group"})
 		return
