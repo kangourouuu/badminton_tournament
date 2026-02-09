@@ -28,6 +28,40 @@ const newGroupName = ref("");
 const selectedPool = ref("Mesoneer"); // Default
 const selectedTeamIds = ref([]);
 
+// -- FILTERS (Participants) --
+const filters = ref({
+  search: "",
+  pool: "ALL",
+  status: "ALL",
+});
+
+const filteredParticipants = computed(() => {
+  return participants.value.filter((p) => {
+    const matchSearch =
+      !filters.value.search ||
+      p.name.toLowerCase().includes(filters.value.search.toLowerCase()) ||
+      p.email.toLowerCase().includes(filters.value.search.toLowerCase());
+    const matchPool =
+      filters.value.pool === "ALL" || p.pool === filters.value.pool;
+
+    // Status: Assigned if team_id is present?
+    // Wait, participant model doesn't have team_id explicitly shown in previous view_file of models.go?
+    // Let's check models.go again... Participant struct doesn't have TeamID.
+    // Team struct has Player1ID and Player2ID.
+    // So "Assigned" means p.ID is in some team.
+    // I need a set of assigned player IDs.
+    // I can compute it efficiently.
+    const isAssigned = (id) =>
+      teams.value.some((t) => t.player1_id === id || t.player2_id === id);
+
+    const status = isAssigned(p.id) ? "ASSIGNED" : "AVAILABLE";
+    const matchStatus =
+      filters.value.status === "ALL" || filters.value.status === status;
+
+    return matchSearch && matchPool && matchStatus;
+  });
+});
+
 // -- INIT --
 const fetchData = async () => {
   loading.value = true;
@@ -204,7 +238,7 @@ const generateKnockout = async () => {
           "
           class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
         >
-          Teams
+          Seeding & Teams
         </button>
         <button
           @click="activeTab = 'data'"
@@ -237,12 +271,6 @@ const generateKnockout = async () => {
       <div v-show="activeTab === 'brackets'" class="space-y-8">
         <div class="flex justify-between items-center">
           <h2 class="text-lg font-bold text-gray-800">Active Groups</h2>
-          <button
-            @click="showCreateGroupModal = true"
-            class="px-4 py-2 bg-violet-600 text-white rounded-sm hover:bg-violet-700 shadow-sm transition-colors flex items-center gap-2"
-          >
-            <span>+ Create Group</span>
-          </button>
         </div>
 
         <div
@@ -291,6 +319,16 @@ const generateKnockout = async () => {
 
       <!-- Tab: TEAMS -->
       <div v-show="activeTab === 'teams'" class="space-y-8">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xl font-bold text-gray-800">Seeding & Teams</h3>
+          <button
+            @click="showCreateGroupModal = true"
+            class="px-4 py-2 bg-violet-600 text-white rounded-sm hover:bg-violet-700 shadow-sm transition-colors flex items-center gap-2"
+          >
+            <span>+ Create Group</span>
+          </button>
+        </div>
+
         <!-- Manual Management -->
         <TeamManager />
 
@@ -332,6 +370,36 @@ const generateKnockout = async () => {
 
       <!-- Tab: DATA -->
       <div v-show="activeTab === 'data'" class="space-y-6">
+        <!-- Filter Toolbar -->
+        <div
+          class="bg-white p-4 rounded-lg border border-gray-200 flex flex-wrap gap-4 items-center"
+        >
+          <div class="flex-1 min-w-[200px]">
+            <input
+              v-model="filters.search"
+              type="text"
+              placeholder="Search by name, email..."
+              class="w-full border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
+            />
+          </div>
+          <select
+            v-model="filters.pool"
+            class="border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
+          >
+            <option value="ALL">All Pools</option>
+            <option value="Mesoneer">Mesoneer</option>
+            <option value="Lab">Lab</option>
+          </select>
+          <select
+            v-model="filters.status"
+            class="border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
+          >
+            <option value="ALL">All Status</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="ASSIGNED">Assigned</option>
+          </select>
+        </div>
+
         <div
           class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden overflow-x-auto"
         >
@@ -347,7 +415,7 @@ const generateKnockout = async () => {
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr
-                v-for="p in participants"
+                v-for="p in filteredParticipants"
                 :key="p.id"
                 class="hover:bg-gray-50 transition-colors"
               >

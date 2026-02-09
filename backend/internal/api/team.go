@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/uptrace/bun"
 	"badminton_tournament/backend/internal/models"
 )
 
@@ -130,7 +131,17 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 		return
 	}
 
-	// 3. Create Team
+	// 3. Validate Availability: Check if players are already in a team
+	count, _ := h.DB.NewSelect().Model((*models.Team)(nil)).
+		Where("player1_id IN (?) OR player2_id IN (?)", bun.In([]string{req.Player1ID, req.Player2ID}), bun.In([]string{req.Player1ID, req.Player2ID})).
+		Count(ctx)
+	
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "One or both players are already in a team"})
+		return
+	}
+
+	// 4. Create Team
 	team := &models.Team{
 		Player1ID: p1.ID,
 		Player2ID: p2.ID,
