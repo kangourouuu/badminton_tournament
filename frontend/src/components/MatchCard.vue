@@ -22,11 +22,19 @@ const status = computed(() => {
 });
 
 const cardClasses = computed(() => {
-  const base =
-    "bg-white rounded-sm p-3 border-2 transition-all duration-200 relative overflow-hidden";
-  if (status.value === "finished") return `${base} border-gray-200 opacity-90`;
-  if (status.value === "ready") return `${base} border-purple-500 shadow-sm`; // "Live" look
-  return `${base} border-gray-100 text-gray-400 border-dashed`; // Empty/Scheduled
+  const base = "border-2";
+  if (status.value === "finished") return `${base} border-gray-200 opacity-95`;
+  if (status.value === "ready")
+    return `${base} border-violet-500 ring-2 ring-violet-100 shadow-md transform scale-[1.02]`;
+  return `${base} border-dashed border-gray-200 bg-gray-50/50`;
+});
+
+const headerClasses = computed(() => {
+  if (status.value === "finished")
+    return "bg-gray-100 text-gray-500 border-gray-200";
+  if (status.value === "ready")
+    return "bg-violet-600 text-white border-violet-600";
+  return "bg-gray-50 text-gray-400 border-gray-200";
 });
 
 const getTeamName = (teamId) => {
@@ -54,67 +62,112 @@ const handleClick = () => {
   <div
     :class="cardClasses"
     @click="handleClick"
-    class="cursor-pointer hover:shadow-md group"
+    class="cursor-pointer hover:shadow-md group transition-all duration-200 bg-white rounded-sm border-2 overflow-hidden relative"
   >
-    <!-- Label -->
+    <!-- Header Strip -->
     <div
-      class="absolute top-0 right-0 bg-gray-100 text-xs text-gray-500 px-2 py-0.5 rounded-bl-sm font-mono"
+      class="flex justify-between items-center px-3 py-1.5 border-b"
+      :class="headerClasses"
     >
-      {{ match.label }}
+      <span class="text-[10px] font-bold uppercase tracking-wider opacity-80">{{
+        match.label
+      }}</span>
+      <span
+        v-if="match.score"
+        class="text-[10px] font-bold uppercase bg-white/20 px-1.5 rounded"
+        >{{ status === "finished" ? "Finished" : "Live" }}</span
+      >
     </div>
 
-    <div class="space-y-2 mt-2">
+    <div class="p-3 space-y-3">
       <!-- Team A -->
-      <div class="flex justify-between items-center">
+      <div
+        class="flex justify-between items-center p-2 rounded-sm transition-colors"
+        :class="isWinner(match.team_a_id) ? 'bg-violet-50' : ''"
+      >
+        <div class="flex items-center gap-2">
+          <!-- Placeholder Avatar -->
+          <div
+            class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-400 font-bold"
+          >
+            {{ match.team_a?.name?.charAt(0) || "?" }}
+          </div>
+          <span
+            :class="{
+              'font-medium text-sm text-gray-700': true,
+              'font-bold text-violet-900': isWinner(match.team_a_id),
+            }"
+          >
+            {{ match.team_a?.name || "TBD" }}
+          </span>
+        </div>
         <span
-          :class="{
-            'font-bold text-gray-900': true,
-            'text-green-600': isWinner(match.team_a_id),
-          }"
-        >
-          {{ match.team_a?.name || "Waiting..." }}
-        </span>
-        <span
-          v-if="match.score && isWinner(match.team_a_id)"
-          class="text-xs font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded"
+          v-if="isWinner(match.team_a_id)"
+          class="text-xs font-bold text-violet-600"
           >WIN</span
         >
       </div>
 
-      <!-- VS / Score -->
-      <div
-        class="text-xs text-center text-gray-400 font-medium py-1 border-t border-b border-gray-50 my-1"
-      >
-        <span v-if="match.score" class="text-purple-600 font-bold text-sm">{{
+      <!-- Score display in middle if needed, or simple divider -->
+      <!-- For 'Tech-Flat Pro', let's format the score distinctly if it exists -->
+      <div v-if="match.score" class="text-center py-1">
+        <span class="text-2xl font-black text-gray-800 tracking-tighter">{{
           match.score
         }}</span>
-        <span v-else>vs</span>
+      </div>
+      <div v-else class="text-center text-xs text-gray-300 py-1 font-mono">
+        VS
       </div>
 
       <!-- Team B -->
-      <div class="flex justify-between items-center">
+      <div
+        class="flex justify-between items-center p-2 rounded-sm transition-colors"
+        :class="isWinner(match.team_b_id) ? 'bg-violet-50' : ''"
+      >
+        <div class="flex items-center gap-2">
+          <div
+            class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-400 font-bold"
+          >
+            {{ match.team_b?.name?.charAt(0) || "?" }}
+          </div>
+          <span
+            :class="{
+              'font-medium text-sm text-gray-700': true,
+              'font-bold text-violet-900': isWinner(match.team_b_id),
+            }"
+          >
+            {{ match.team_b?.name || "TBD" }}
+          </span>
+        </div>
         <span
-          :class="{
-            'font-bold text-gray-900': true,
-            'text-green-600': isWinner(match.team_b_id),
-          }"
-        >
-          {{ match.team_b?.name || "Waiting..." }}
-        </span>
-        <span
-          v-if="match.score && isWinner(match.team_b_id)"
-          class="text-xs font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded"
+          v-if="isWinner(match.team_b_id)"
+          class="text-xs font-bold text-violet-600"
           >WIN</span
         >
       </div>
     </div>
 
-    <!-- Video Indicator -->
+    <!-- Video Overlay -->
     <div
       v-if="match.video_url && !isAdmin"
-      class="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+      class="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
     >
-      <div class="bg-white rounded-full p-2 shadow-sm text-red-600">▶</div>
+      <div
+        class="bg-white rounded-full p-3 shadow-lg text-violet-600 transform scale-110"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="w-6 h-6"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </div>
     </div>
   </div>
 </template>
