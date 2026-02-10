@@ -126,20 +126,14 @@ const createTeam = async () => {
           v-model="filters.search"
           type="text"
           placeholder="Search name/email..."
-          class="min-w-[200px] border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
+          class="input-material min-w-[200px]"
         />
-        <select
-          v-model="filters.pool"
-          class="border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
-        >
+        <select v-model="filters.pool" class="input-material w-32">
           <option value="ALL">All Pools</option>
           <option value="Mesoneer">Mesoneer</option>
           <option value="Lab">Lab</option>
         </select>
-        <select
-          v-model="filters.status"
-          class="border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
-        >
+        <select v-model="filters.status" class="input-material w-32">
           <option value="ALL">All Status</option>
           <option value="FREE">Free</option>
           <option value="BUSY">In Team</option>
@@ -148,7 +142,7 @@ const createTeam = async () => {
 
       <button
         @click="openTeamModal"
-        class="px-4 py-2 bg-violet-600 text-white font-medium rounded-sm hover:bg-violet-700 shadow-sm flex items-center gap-2"
+        class="px-4 py-2 bg-violet-600 text-white font-medium rounded-sm btn-animated flex items-center gap-2"
       >
         <span>+ Form Team</span>
       </button>
@@ -171,7 +165,7 @@ const createTeam = async () => {
           <tr
             v-for="p in filteredParticipants"
             :key="p.id"
-            class="hover:bg-gray-50"
+            class="hover:bg-gray-50 transition-colors"
           >
             <td class="px-6 py-3 font-medium text-gray-900">{{ p.name }}</td>
             <td class="px-6 py-3 text-gray-500">{{ p.email }}</td>
@@ -226,7 +220,7 @@ const createTeam = async () => {
             <select
               v-model="teamForm.player1_id"
               @change="teamForm.player2_id = ''"
-              class="w-full border-gray-300 rounded-sm focus:ring-violet-500"
+              class="input-material"
             >
               <option value="" disabled>Select Player 1</option>
               <option v-for="p in p1Options" :key="p.id" :value="p.id">
@@ -242,7 +236,7 @@ const createTeam = async () => {
             <select
               v-model="teamForm.player2_id"
               :disabled="!teamForm.player1_id"
-              class="w-full border-gray-300 rounded-sm focus:ring-violet-500 disabled:opacity-50"
+              class="input-material disabled:opacity-50"
             >
               <option value="" disabled>Select Player 2</option>
               <option v-for="p in p2Options" :key="p.id" :value="p.id">
@@ -255,14 +249,14 @@ const createTeam = async () => {
         <div class="mt-6 flex justify-end gap-3">
           <button
             @click="showTeamModal = false"
-            class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-sm"
+            class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
           >
             Cancel
           </button>
           <button
             @click="createTeam"
             :disabled="!teamForm.player1_id || !teamForm.player2_id"
-            class="px-4 py-2 bg-violet-600 text-white rounded-sm hover:bg-violet-700 disabled:opacity-50"
+            class="px-4 py-2 bg-violet-600 text-white rounded-sm hover:bg-violet-700 disabled:opacity-50 btn-animated"
           >
             Create Team
           </button>

@@ -9,24 +9,29 @@ const props = defineProps({
 const emit = defineEmits(["close", "save"]);
 
 const winnerId = ref("");
-const score = ref("");
 const videoUrl = ref("");
-const knockoutSets = ref([""]); // Array for Best of 3 sets
 
-// Determine if this is a Group Stage match (M1-M5) or Knockout (SF/Final)
-const isGroupStage = computed(() => {
-  if (!props.match) return true;
-  // Matches with strictly M1-M5 labels are Group Stage
-  return [
-    "M1",
-    "M2",
-    "M3",
-    "Winners",
-    "M4",
-    "Losers",
-    "M5",
-    "Decider",
-  ].includes(props.match.label);
+// Detailed Sets: [ {a: null, b: null}, ... ]
+const sets = ref([
+  { a: null, b: null },
+  { a: null, b: null },
+  { a: null, b: null },
+]);
+
+// Auto-calculate score string (e.g. "2-1")
+const calculatedScore = computed(() => {
+  let aWins = 0;
+  let bWins = 0;
+  sets.value.forEach((s) => {
+    if (s.a !== null && s.b !== null && s.a !== "" && s.b !== "") {
+      const pA = parseInt(s.a);
+      const pB = parseInt(s.b);
+      if (pA > pB) aWins++;
+      else if (pB > pA) bWins++;
+    }
+  });
+  if (aWins === 0 && bWins === 0) return "";
+  return `${aWins}-${bWins}`;
 });
 
 // Sync data when match changes
@@ -37,38 +42,51 @@ watch(
       winnerId.value = newMatch.winner_id || "";
       videoUrl.value = newMatch.video_url || "";
 
-      // Parse Score
-      if (isGroupStage.value) {
-        score.value = newMatch.score || "1-0";
+      // Parse detailed sets if available
+      if (newMatch.sets_detail && newMatch.sets_detail.sets) {
+        // Map back to our structure
+        const loadedSets = newMatch.sets_detail.sets;
+        sets.value = [
+          { a: loadedSets[0]?.a ?? null, b: loadedSets[0]?.b ?? null },
+          { a: loadedSets[1]?.a ?? null, b: loadedSets[1]?.b ?? null },
+          { a: loadedSets[2]?.a ?? null, b: loadedSets[2]?.b ?? null },
+        ];
+      } else if (newMatch.score) {
+        // Legacy/Simple score support could go here, but let's reset to clean slate
+        // or try to parse if format was "21-19, 15-21"
+        // For now, reset to empty to encourage re-entry
+        sets.value = [
+          { a: null, b: null },
+          { a: null, b: null },
+          { a: null, b: null },
+        ];
       } else {
-        // Flattened string "21-19, 21-18" -> Array
-        knockoutSets.value = newMatch.score ? newMatch.score.split(", ") : [""];
+        sets.value = [
+          { a: null, b: null },
+          { a: null, b: null },
+          { a: null, b: null },
+        ];
       }
     }
   },
   { immediate: true },
 );
 
-const addSet = () => {
-  if (knockoutSets.value.length < 3) {
-    knockoutSets.value.push("");
-  }
-};
-
 const save = () => {
-  let finalScore = "";
-
-  if (isGroupStage.value) {
-    finalScore = score.value || "1-0";
-  } else {
-    // Filter empty sets and join
-    finalScore = knockoutSets.value.filter((s) => s.trim() !== "").join(", ");
-  }
+  // Construct sets_detail payload
+  const validSets = sets.value
+    .map((s, i) => ({
+      set: i + 1,
+      a: s.a && parseInt(s.a),
+      b: s.b && parseInt(s.b),
+    }))
+    .filter((s) => s.a !== null && !isNaN(s.a)); // Basic filter
 
   emit("save", {
     id: props.match.id,
     winner_id: winnerId.value,
-    score: finalScore,
+    score: calculatedScore.value || "0-0",
+    sets_detail: { sets: validSets },
     video_url: videoUrl.value,
   });
 };
@@ -77,22 +95,56 @@ const save = () => {
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity"
   >
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 space-y-6">
-      <h3 class="text-xl font-bold text-gray-800">Update Match Result</h3>
+    <div
+      class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all"
+    >
+      <!-- Header -->
+      <div class="bg-slate-900 px-6 py-4 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-white uppercase tracking-wider">
+          Update Match Result
+        </h3>
+        <button
+          @click="$emit('close')"
+          class="text-slate-400 hover:text-white transition-colors"
+        >
+          ✕
+        </button>
+      </div>
 
-      <div class="space-y-4">
+      <div class="p-8 space-y-8">
+        <!-- Teams Header -->
+        <div class="flex justify-between items-center px-4">
+          <div class="text-center w-1/3">
+            <div class="text-sm text-slate-400 uppercase font-bold mb-1">
+              Team A
+            </div>
+            <div class="font-black text-slate-800 text-lg leading-tight">
+              {{ match.team_a?.name || "TBD" }}
+            </div>
+          </div>
+          <div class="text-2xl font-black text-slate-300">VS</div>
+          <div class="text-center w-1/3">
+            <div class="text-sm text-slate-400 uppercase font-bold mb-1">
+              Team B
+            </div>
+            <div class="font-black text-slate-800 text-lg leading-tight">
+              {{ match.team_b?.name || "TBD" }}
+            </div>
+          </div>
+        </div>
+
         <!-- Winner Selection -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Winner <span class="text-red-500">*</span></label
+        <div class="relative">
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2"
+            >Match Winner</label
           >
           <select
             v-model="winnerId"
-            class="w-full border border-gray-300 rounded-sm p-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+            class="input-material font-bold text-slate-800"
           >
-            <option value="">Select Winner...</option>
+            <option value="" disabled>Select Winner...</option>
             <option v-if="match.team_a" :value="match.team_a.id">
               {{ match.team_a.name }}
             </option>
@@ -102,90 +154,87 @@ const save = () => {
           </select>
         </div>
 
-        <!-- Group Stage Logic (1 Set) -->
-        <div
-          v-if="isGroupStage"
-          class="p-4 bg-gray-50 rounded-sm border border-gray-200"
-        >
-          <label class="block text-xs font-bold text-gray-500 uppercase mb-2"
-            >Group Stage Scoring (1 Set)</label
+        <!-- Detailed Scoring -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-4"
+            >Set Scores</label
           >
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-medium text-gray-700">Score:</span>
-            <input
-              v-model="score"
-              type="text"
-              placeholder="1-0"
-              class="flex-1 border border-gray-300 rounded-sm p-2 text-sm focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-          <p class="text-xs text-gray-400 mt-1">
-            Default is "1-0". You can enter points (e.g. "31-29") if needed.
-          </p>
-        </div>
-
-        <!-- Knockout Stage Logic (Best of 3) -->
-        <div
-          v-else
-          class="p-4 bg-purple-50 rounded-sm border border-purple-100"
-        >
-          <label class="block text-xs font-bold text-purple-600 uppercase mb-2"
-            >Knockout Scoring (Best of 3)</label
-          >
-          <div class="space-y-2">
+          <div class="space-y-4">
             <div
-              class="flex gap-2"
-              v-for="(set, index) in knockoutSets"
-              :key="index"
+              v-for="(set, i) in sets"
+              :key="i"
+              class="flex items-center gap-4"
             >
-              <span class="text-xs text-gray-500 w-12 pt-2"
-                >Set {{ index + 1 }}</span
-              >
+              <div class="w-12 text-xs font-bold text-slate-400 uppercase pt-2">
+                Set {{ i + 1 }}
+              </div>
               <input
-                v-model="knockoutSets[index]"
-                type="text"
-                placeholder="21-19"
-                class="flex-1 border border-gray-300 rounded-sm p-1 text-sm text-center"
+                v-model="set.a"
+                type="number"
+                placeholder="0"
+                class="input-material text-center font-mono"
+              />
+              <span class="text-slate-300">-</span>
+              <input
+                v-model="set.b"
+                type="number"
+                placeholder="0"
+                class="input-material text-center font-mono"
               />
             </div>
-            <button
-              v-if="knockoutSets.length < 3"
-              @click="addSet"
-              class="text-xs text-violet-600 hover:text-violet-800 font-medium underline"
+          </div>
+
+          <!-- Calculated Score Display -->
+          <div class="mt-4 text-center">
+            <span class="text-xs font-bold text-slate-400 uppercase mr-2"
+              >Final Score:</span
             >
-              + Add Set
-            </button>
+            <span class="text-xl font-black text-violet-600">{{
+              calculatedScore || "0-0"
+            }}</span>
           </div>
         </div>
 
         <!-- Video URL -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Match's Video URL</label
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2"
+            >Video Recording URL</label
           >
           <input
             v-model="videoUrl"
             type="text"
             placeholder="https://youtu.be/..."
-            class="w-full border border-gray-300 rounded-sm p-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+            class="input-material text-sm"
           />
         </div>
       </div>
 
-      <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+      <!-- Footer -->
+      <div
+        class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-4"
+      >
         <button
           @click="$emit('close')"
-          class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
+          class="px-6 py-2 text-slate-500 font-bold hover:text-slate-700 transition-colors"
         >
           Cancel
         </button>
         <button
           @click="save"
-          class="px-4 py-2 bg-violet-600 text-white rounded-sm hover:bg-violet-700 transition-colors"
+          class="px-8 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
         >
-          Save Result
+          Save Details
         </button>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Scoped overrides if needed, mostly Tailwind */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+</style>

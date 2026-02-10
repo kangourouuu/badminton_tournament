@@ -36,76 +36,181 @@ const onMatchClick = (match) => {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto pb-4">
-    <div class="grid grid-cols-3 gap-12 items-center min-w-[900px]">
-      <!-- Column 1: Opening Matches -->
-      <div class="flex flex-col gap-12 relative">
-        <div v-if="m1" class="match-node match-m1 relative">
-          <div
-            class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
+  <div
+    class="w-full overflow-x-auto pb-8 pt-4 px-4 bg-gray-50/50 rounded-xl border border-gray-100"
+  >
+    <div class="relative min-w-[1000px] h-[400px]">
+      <!-- SVG Connector Layer -->
+      <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
+        <defs>
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
           >
-            Opening A
-          </div>
-          <MatchCard :match="m1" :is-admin="isAdmin" @click="onMatchClick" />
-        </div>
-        <div v-if="m2" class="match-node match-m2 relative">
-          <div
-            class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
-          >
-            Opening B
-          </div>
-          <MatchCard :match="m2" :is-admin="isAdmin" @click="onMatchClick" />
-        </div>
-      </div>
+            <polygon points="0 0, 10 3.5, 0 7" fill="#cbd5e1" />
+          </marker>
+        </defs>
 
-      <!-- Column 2: Winners & Losers -->
-      <div class="flex flex-col gap-12 relative">
-        <!-- Larger gap to align with M1/M2 center? or just space out -->
-        <div
-          v-if="winners"
-          :id="groupId ? `group-winner-${groupId}` : undefined"
-          class="match-node match-m3 relative"
-        >
-          <div
-            class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
-          >
-            Winners Match
-          </div>
-          <MatchCard
-            :match="winners"
-            :is-admin="isAdmin"
-            @click="onMatchClick"
-            class="border-purple-200"
-          />
-        </div>
-        <div v-if="losers" class="match-node match-m4 relative">
-          <div
-            class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
-          >
-            Elimination Match
-          </div>
-          <MatchCard
-            :match="losers"
-            :is-admin="isAdmin"
-            @click="onMatchClick"
-          />
-        </div>
-      </div>
+        <!-- M1 (Top-Left) to M3 (Top-Mid) [Winner] -->
+        <path
+          d="M 280 60 C 330 60, 330 60, 380 60"
+          stroke="#cbd5e1"
+          stroke-width="2"
+          fill="none"
+          marker-end="url(#arrowhead)"
+        />
+        <!-- M1 (Top-Left) to M4 (Bot-Mid) [Loser - Cross] -->
+        <path
+          d="M 280 70 C 330 70, 330 310, 380 310"
+          stroke="#f1f5f9"
+          stroke-width="2"
+          stroke-dasharray="4"
+          fill="none"
+        />
 
-      <!-- Column 3: Decider -->
-      <div class="flex flex-col justify-center relative">
-        <div v-if="decider" class="match-node match-m5 relative">
-          <div
-            class="text-xs text-orange-500 mb-1 uppercase tracking-wider font-bold"
-          >
-            Decider Match
+        <!-- M2 (Bot-Left) to M3 (Top-Mid) [Winner - Cross] -->
+        <path
+          d="M 280 300 C 330 300, 330 70, 380 70"
+          stroke="#cbd5e1"
+          stroke-width="2"
+          fill="none"
+          marker-end="url(#arrowhead)"
+        />
+        <!-- M2 (Bot-Left) to M4 (Bot-Mid) [Loser] -->
+        <path
+          d="M 280 310 C 330 310, 330 310, 380 310"
+          stroke="#f1f5f9"
+          stroke-width="2"
+          stroke-dasharray="4"
+          fill="none"
+        />
+
+        <!-- M3 (Top-Mid) to M5 (Center-Right) [Loser] -->
+        <path
+          d="M 660 70 C 710 70, 710 185, 760 185"
+          stroke="#f1f5f9"
+          stroke-width="2"
+          stroke-dasharray="4"
+          fill="none"
+        />
+
+        <!-- M4 (Bot-Mid) to M5 (Center-Right) [Winner] -->
+        <path
+          d="M 660 300 C 710 300, 710 195, 760 195"
+          stroke="#cbd5e1"
+          stroke-width="2"
+          fill="none"
+          marker-end="url(#arrowhead)"
+        />
+      </svg>
+
+      <!-- Grid Columns -->
+      <div class="grid grid-cols-3 h-full absolute inset-0 z-10">
+        <!-- COL 1: Opening (M1, M2) -->
+        <div class="flex flex-col justify-between py-4 px-8">
+          <!-- M1 -->
+          <div v-if="m1" class="relative w-64">
+            <div
+              class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
+            >
+              Opening A
+            </div>
+            <MatchCard :match="m1" :is-admin="isAdmin" @click="onMatchClick" />
           </div>
-          <MatchCard
-            :match="decider"
-            :is-admin="isAdmin"
-            @click="onMatchClick"
-            class="border-orange-200"
-          />
+          <div
+            v-else
+            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+          >
+            Waiting M1
+          </div>
+
+          <!-- M2 -->
+          <div v-if="m2" class="relative w-64">
+            <div
+              class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
+            >
+              Opening B
+            </div>
+            <MatchCard :match="m2" :is-admin="isAdmin" @click="onMatchClick" />
+          </div>
+          <div
+            v-else
+            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+          >
+            Waiting M2
+          </div>
+        </div>
+
+        <!-- COL 2: Winners (M3) & Losers (M4) -->
+        <div class="flex flex-col justify-between py-4 px-8">
+          <!-- M3 -->
+          <div v-if="winners" class="relative w-64">
+            <div
+              class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
+            >
+              Winners Match
+            </div>
+            <MatchCard
+              :match="winners"
+              :is-admin="isAdmin"
+              @click="onMatchClick"
+              class="border-purple-200 shadow-purple-50"
+            />
+          </div>
+          <div
+            v-else
+            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+          >
+            Waiting Winners
+          </div>
+
+          <!-- M4 -->
+          <div v-if="losers" class="relative w-64">
+            <div
+              class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
+            >
+              Elimination
+            </div>
+            <MatchCard
+              :match="losers"
+              :is-admin="isAdmin"
+              @click="onMatchClick"
+            />
+          </div>
+          <div
+            v-else
+            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+          >
+            Waiting Elimination
+          </div>
+        </div>
+
+        <!-- COL 3: Decider (M5) -->
+        <div class="flex flex-col justify-center px-8">
+          <!-- M5 -->
+          <div v-if="decider" class="relative w-64">
+            <div
+              class="text-xs text-orange-500 mb-1 uppercase tracking-wider font-bold"
+            >
+              Decider Match
+            </div>
+            <MatchCard
+              :match="decider"
+              :is-admin="isAdmin"
+              @click="onMatchClick"
+              class="border-orange-200 shadow-orange-50"
+            />
+          </div>
+          <div
+            v-else
+            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+          >
+            Waiting Decider
+          </div>
         </div>
       </div>
     </div>
@@ -113,70 +218,5 @@ const onMatchClick = (match) => {
 </template>
 
 <style scoped>
-/* Connector Lines */
-.match-node::after {
-  content: "";
-  position: absolute;
-  background-color: #e5e7eb; /* gray-200 */
-  z-index: 0;
-}
-
-/* M1 connects to M3 (Down-Right) */
-.match-m1::after {
-  width: 2rem;
-  height: 2px;
-  top: 60%;
-  right: -2rem;
-}
-/* We ideally want lines to connect nodes specifically, but strict CSS grid lines are hard without fixed heights.
-   Visual approximation: Just show outgoing lines indicating flow. */
-
-/* Refined Approach: Use borders on pseodo elements to create bracket shapes */
-
-/* M1 -> M3 */
-.match-m1::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -2rem; /* Extend into gap */
-  width: 2rem;
-  height: 50%; /* Go down? */
-  border-top: 2px solid #e2e8f0;
-  border-right: 2px solid #e2e8f0;
-  border-top-right-radius: 8px;
-  transform: translateY(0);
-  z-index: 0;
-}
-/* But M1 goes to M3 (Win) AND M4 (Lose). This is too complex for simple CSS lines without SVG. 
-   Let's stick to simple "Flow" indicators */
-
-.match-node {
-  position: relative;
-}
-
-/* Outgoing line */
-.match-node::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -32px; /* Pull into gap */
-  width: 32px;
-  height: 2px;
-  background: #e2e8f0;
-  z-index: 0;
-}
-
-/* Incoming line for Gen 2/3 */
-.match-m3::after,
-.match-m4::after,
-.match-m5::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: -32px;
-  width: 32px;
-  height: 2px;
-  background: #e2e8f0;
-  z-index: 0;
-}
+/* Scoped styles mainly for specific overrides, layout handled by Tailwind */
 </style>

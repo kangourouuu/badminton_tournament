@@ -69,6 +69,23 @@ const fetchData = async () => {
   }
 };
 
+// -- COMPUTED --
+const availableTeams = computed(() => {
+  if (!teams.value.length) return [];
+  const assignedTeamIds = new Set();
+
+  groups.value.forEach((g) => {
+    if (g.matches) {
+      g.matches.forEach((m) => {
+        if (m.team_a_id) assignedTeamIds.add(m.team_a_id);
+        if (m.team_b_id) assignedTeamIds.add(m.team_b_id);
+      });
+    }
+  });
+
+  return teams.value.filter((t) => !assignedTeamIds.has(t.id));
+});
+
 onMounted(fetchData);
 
 const logout = () => {
@@ -87,10 +104,11 @@ const saveMatchResult = async (data) => {
     await api.post(`/matches/${data.id}`, {
       winner_id: data.winner_id,
       score: data.score,
+      sets_detail: data.sets_detail,
       video_url: data.video_url,
     });
     showScoreModal.value = false;
-    fetchData();
+    fetchData(); // Refresh to update brackets
   } catch (err) {
     alert("Failed to update match: " + err.message);
   }
@@ -259,7 +277,7 @@ const saveRules = async () => {
 
       <!-- Tab: SEEDING -->
       <div v-show="activeTab === 'seeding'" class="space-y-6">
-        <SeedingManager :teams="teams" @refresh="fetchData" />
+        <SeedingManager :teams="availableTeams" @refresh="fetchData" />
       </div>
 
       <!-- Tab: PARTICIPANTS -->
