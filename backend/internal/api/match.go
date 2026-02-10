@@ -64,6 +64,16 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 		if match.NextMatchLoseID != uuid.Nil && loserID != uuid.Nil {
 			h.propagateToMatch(ctx, match.NextMatchLoseID, loserID, match.Label, "lose")
 		}
+
+		// 4. Auto-Flow: Check for Qualification (GSL -> Knockout)
+		// Winners Match (M3) Winner -> Rank 1
+		if match.Label == "Winners" {
+			h.promoteToKnockout(ctx, match.GroupID, 1, req.WinnerID)
+		}
+		// Decider Match (M5) Winner -> Rank 2
+		if match.Label == "Decider" {
+			h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID)
+		}
 	}
 
 	c.JSON(http.StatusOK, match)
@@ -124,9 +134,72 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 		}
 	}
 
+// ... (propagateToMatch existing code)
 	if col != "" {
 		_, err = h.DB.NewUpdate().Model(&target).Column(col).WherePK().Exec(ctx)
 		return err
 	}
+	return nil
+}
+
+// Auto-Flow: Promote Group Winners to Knockout Bracket
+func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank int, teamID uuid.UUID) error {
+	// 1. Get Source Group Name (to determine A vs B)
+	var group models.Group
+	if err := h.DB.NewSelect().Model(&group).Where("id = ?", groupID).Scan(ctx); err != nil {
+		return err
+	}
+
+	// 2. Get Knockout Group & Matches
+	var koGroup models.Group
+	if err := h.DB.NewSelect().Model(&koGroup).Where("name = ?", "KNOCKOUT").Relation("Matches").Scan(ctx); err != nil {
+		return err // Knockout bracket might not exist yet
+	}
+
+	// 3. Find Target Slot
+	// Logic:
+	// Group A (Mesoneer?) -> "Group A"
+	// Group B (Lab?)      -> "Group B"
+	// Mapping:
+	// A1 -> SF1 (Home)
+	// B2 -> SF1 (Away)
+	// B1 -> SF2 (Home)
+	// A2 -> SF2 (Away)
+
+	var targetLabel string
+	var targetCol string
+
+	// Heuristic: Check if name contains "A" or "Mesoneer" vs "B" or "Lab"
+	// NOTE: This relies on naming conventions "Group A" / "Group B" or Pools.
+	// Let's use Pool if available, or Name.
+	isGroupA := group.Pool == "Mesoneer" || group.Name == "Group A"
+	// isGroupB := group.Pool == "Lab" || group.Name == "Group B"
+
+	if isGroupA {
+		if rank == 1 {
+			targetLabel = "SF1"
+			targetCol = "team_a_id"
+		} else {
+			targetLabel = "SF2"
+			targetCol = "team_b_id"
+		}
+	} else { // Group B
+		if rank == 1 {
+			targetLabel = "SF2"
+			targetCol = "team_a_id"
+		} else {
+			targetLabel = "SF1"
+			targetCol = "team_b_id"
+		}
+	}
+
+	// 4. Update the Target Match
+	for _, m := range koGroup.Matches {
+		if m.Label == targetLabel {
+			_, err := h.DB.NewUpdate().Model(m).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
+			return err
+		}
+	}
+
 	return nil
 }

@@ -116,27 +116,26 @@ const saveMatchResult = async (data) => {
     alert("Failed to update match: " + err.message);
   }
 };
-// -- BRACKETS AUTOMATION --
-const generateKnockout = async () => {
-  if (
-    !confirm(
-      "Are you sure? This will generate the SF/Finals based on current standings.",
-    )
-  )
-    return;
-  loading.value = true;
-  try {
-    await api.post("/tournaments/knockout", {
-      tournament_id: "00000000-0000-0000-0000-000000000000",
-    });
-    alert("Knockout bracket generated!");
-    await fetchData();
-  } catch (err) {
-    alert("Failed: " + (err.response?.data?.error || err.message));
-  } finally {
-    loading.value = false;
-  }
-};
+// ... (rest of simple script logic if any remains before template starts?)
+
+// ... (rest of simple script logic if any remains before template starts?)
+// Actually lines 121-144 were garbage.
+// The real code continues at line 145 (generateKnockout) in previous version but here I am creating a replacement block that bridges the gap properly.
+// Wait, looking at file content:
+// Line 118: };
+// Line 119: // ... (rest of script)
+// Line 121: // ... (in template)
+// ... garbage ...
+// Line 144: // -- BRACKETS AUTOMATION --
+// So I need to replace from line 119 to 144 with *nothing* (or just the commented out section if needed, but better clear it).
+
+// AND update template below.
+// Since replace_file_content works on contiguous blocks or multi-chunks.
+// I will use multi-chunks.
+
+// Chunk 1: Remove garbage from script.
+// Chunk 2: Update Grids in Template.
+// Chunk 3: Update ScoreModal in Template.
 
 // ... (rest of simple script logic if any remains before template starts?)
 // Actually lines 121-144 were garbage.
@@ -273,26 +272,6 @@ const saveRules = async () => {
             :is-admin="true"
             @match-click="(m) => openScoreModal(m, 'GROUP')"
           />
-        </div>
-
-        <!-- Knockout Generator -->
-        <div class="bg-amber-50 rounded-lg p-6 border border-amber-200">
-          <h2 class="text-lg font-bold text-amber-900 mb-4">
-            🏆 Knockout Stage
-          </h2>
-          <div class="flex items-center gap-4">
-            <p class="text-sm text-amber-800 flex-1">
-              Once all groups are finished, generate the Semi-Finals and Finals
-              bracket. Top 2 of each group will qualify.
-            </p>
-            <button
-              @click="generateKnockout"
-              :disabled="loading"
-              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md font-medium text-sm transition-colors shadow-sm disabled:opacity-50"
-            >
-              Generate Bracket
-            </button>
-          </div>
         </div>
       </div>
 
