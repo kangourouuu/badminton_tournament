@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import MatchCard from "./MatchCard.vue";
+import { useBracketConnectors } from "../composables/useBracketConnectors";
 
 const props = defineProps({
   matches: {
@@ -33,13 +34,65 @@ const decider = computed(() =>
 const onMatchClick = (match) => {
   emit("match-click", match);
 };
+
+// --- DYNAMIC SVG CONNECTORS ---
+const containerRef = ref(null);
+const { paths, updateConnectors } = useBracketConnectors(containerRef);
+
+const updatePaths = async () => {
+  const gid = props.groupId;
+  const connections = [
+    // M1 -> Winners (Win)
+    {
+      startId: `gsl-${gid}-m1`,
+      endId: `gsl-${gid}-winners`,
+      type: "orthogonal",
+    },
+    // M1 -> Losers (Lose)
+    { startId: `gsl-${gid}-m1`, endId: `gsl-${gid}-losers`, type: "dashed" },
+
+    // M2 -> Winners (Win)
+    {
+      startId: `gsl-${gid}-m2`,
+      endId: `gsl-${gid}-winners`,
+      type: "orthogonal",
+    },
+    // M2 -> Losers (Lose)
+    { startId: `gsl-${gid}-m2`, endId: `gsl-${gid}-losers`, type: "dashed" },
+
+    // Winners -> Decider (Lose)
+    {
+      startId: `gsl-${gid}-winners`,
+      endId: `gsl-${gid}-decider`,
+      type: "dashed",
+    },
+    // Losers -> Decider (Win)
+    {
+      startId: `gsl-${gid}-losers`,
+      endId: `gsl-${gid}-decider`,
+      type: "orthogonal",
+    },
+  ];
+  await updateConnectors(connections);
+};
+
+watch(() => props.matches, updatePaths, { deep: true });
+
+onMounted(() => {
+  window.addEventListener("resize", updatePaths);
+  setTimeout(updatePaths, 100);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updatePaths);
+});
 </script>
 
 <template>
   <div
     class="w-full overflow-x-auto pb-8 pt-4 px-4 bg-gray-50/50 rounded-xl border border-gray-100"
   >
-    <div class="relative min-w-[1000px] h-[400px]">
+    <div ref="containerRef" class="relative min-w-[1000px] h-[400px]">
       <!-- SVG Connector Layer -->
       <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
         <defs>
@@ -55,56 +108,15 @@ const onMatchClick = (match) => {
           </marker>
         </defs>
 
-        <!-- M1 (Top-Left) to M3 (Top-Mid) [Winner] -->
         <path
-          d="M 280 60 C 330 60, 330 60, 380 60"
-          stroke="#cbd5e1"
+          v-for="(path, i) in paths"
+          :key="i"
+          :d="path.d"
+          :stroke="path.type === 'dashed' ? '#f1f5f9' : '#cbd5e1'"
           stroke-width="2"
           fill="none"
-          marker-end="url(#arrowhead)"
-        />
-        <!-- M1 (Top-Left) to M4 (Bot-Mid) [Loser - Cross] -->
-        <path
-          d="M 280 70 C 330 70, 330 310, 380 310"
-          stroke="#f1f5f9"
-          stroke-width="2"
-          stroke-dasharray="4"
-          fill="none"
-        />
-
-        <!-- M2 (Bot-Left) to M3 (Top-Mid) [Winner - Cross] -->
-        <path
-          d="M 280 300 C 330 300, 330 70, 380 70"
-          stroke="#cbd5e1"
-          stroke-width="2"
-          fill="none"
-          marker-end="url(#arrowhead)"
-        />
-        <!-- M2 (Bot-Left) to M4 (Bot-Mid) [Loser] -->
-        <path
-          d="M 280 310 C 330 310, 330 310, 380 310"
-          stroke="#f1f5f9"
-          stroke-width="2"
-          stroke-dasharray="4"
-          fill="none"
-        />
-
-        <!-- M3 (Top-Mid) to M5 (Center-Right) [Loser] -->
-        <path
-          d="M 660 70 C 710 70, 710 185, 760 185"
-          stroke="#f1f5f9"
-          stroke-width="2"
-          stroke-dasharray="4"
-          fill="none"
-        />
-
-        <!-- M4 (Bot-Mid) to M5 (Center-Right) [Winner] -->
-        <path
-          d="M 660 300 C 710 300, 710 195, 760 195"
-          stroke="#cbd5e1"
-          stroke-width="2"
-          fill="none"
-          marker-end="url(#arrowhead)"
+          :stroke-dasharray="path.type === 'dashed' ? '4' : '0'"
+          :marker-end="path.type === 'orthogonal' ? 'url(#arrowhead)' : ''"
         />
       </svg>
 
@@ -113,7 +125,7 @@ const onMatchClick = (match) => {
         <!-- COL 1: Opening (M1, M2) -->
         <div class="flex flex-col justify-between py-4 px-8">
           <!-- M1 -->
-          <div v-if="m1" class="relative w-64">
+          <div :id="`gsl-${groupId}-m1`" v-if="m1" class="relative w-64">
             <div
               class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
             >
@@ -123,13 +135,14 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
+            :id="`gsl-${groupId}-m1`"
             class="h-24 w-64 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting M1
           </div>
 
           <!-- M2 -->
-          <div v-if="m2" class="relative w-64">
+          <div :id="`gsl-${groupId}-m2`" v-if="m2" class="relative w-64">
             <div
               class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
             >
@@ -139,6 +152,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
+            :id="`gsl-${groupId}-m2`"
             class="h-24 w-64 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting M2
@@ -148,7 +162,11 @@ const onMatchClick = (match) => {
         <!-- COL 2: Winners (M3) & Losers (M4) -->
         <div class="flex flex-col justify-between py-4 px-8">
           <!-- M3 -->
-          <div v-if="winners" class="relative w-64">
+          <div
+            :id="`gsl-${groupId}-winners`"
+            v-if="winners"
+            class="relative w-64"
+          >
             <div
               class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
             >
@@ -163,13 +181,18 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
+            :id="`gsl-${groupId}-winners`"
             class="h-24 w-64 bg-purple-50/30 border-2 border-dashed border-purple-100 rounded flex items-center justify-center text-purple-300 text-xs font-mono"
           >
             Waiting Winners
           </div>
 
           <!-- M4 -->
-          <div v-if="losers" class="relative w-64">
+          <div
+            :id="`gsl-${groupId}-losers`"
+            v-if="losers"
+            class="relative w-64"
+          >
             <div
               class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
             >
@@ -183,6 +206,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
+            :id="`gsl-${groupId}-losers`"
             class="h-24 w-64 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting Elimination
@@ -192,7 +216,11 @@ const onMatchClick = (match) => {
         <!-- COL 3: Decider (M5) -->
         <div class="flex flex-col justify-center px-8">
           <!-- M5 -->
-          <div v-if="decider" class="relative w-64">
+          <div
+            :id="`gsl-${groupId}-decider`"
+            v-if="decider"
+            class="relative w-64"
+          >
             <div
               class="text-xs text-orange-500 mb-1 uppercase tracking-wider font-bold"
             >
@@ -207,6 +235,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
+            :id="`gsl-${groupId}-decider`"
             class="h-24 w-64 bg-orange-50/30 border-2 border-dashed border-orange-100 rounded flex items-center justify-center text-orange-300 text-xs font-mono"
           >
             Waiting Decider

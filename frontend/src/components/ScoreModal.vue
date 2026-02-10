@@ -22,9 +22,16 @@ const sets = ref([
   { a: null, b: null },
 ]);
 
+// simple scoring condition
+const isSimpleScoring = computed(() => {
+  if (props.stage !== "GROUP") return false;
+  const label = props.match?.label || "";
+  return label === "M1" || label === "M2";
+});
+
 // Auto-calculate score string (e.g. "2-1")
 const calculatedScore = computed(() => {
-  if (props.stage === "GROUP") {
+  if (isSimpleScoring.value) {
     return winnerId.value ? "1-0" : "";
   }
   let aWins = 0;
@@ -84,7 +91,7 @@ const save = () => {
   let validSets = [];
   let score = calculatedScore.value || "0-0";
 
-  if (props.stage === "GROUP") {
+  if (isSimpleScoring.value) {
     // For Group stage, we enforce a simple "1-0" structure invisibly if needed,
     // or just send empty sets. Backend should handle simplified score string.
     // We can mock a single set 1-0 for consistency?
@@ -154,12 +161,12 @@ const save = () => {
           </div>
         </div>
 
-        <!-- FEATURE A: SIMPLIFIED GROUP SCORING -->
-        <div v-if="stage === 'GROUP'">
+        <!-- FEATURE A: SIMPLIFIED GROUP SCORING (Only M1/M2) -->
+        <div v-if="isSimpleScoring">
           <label
             class="block text-xs font-bold text-slate-400 uppercase mb-4 text-center"
           >
-            Select Winner (Group Stage)
+            Select Winner (Opening Match)
           </label>
           <div class="grid grid-cols-2 gap-4">
             <button
