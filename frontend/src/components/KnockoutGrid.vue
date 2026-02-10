@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import MatchCard from "./MatchCard.vue";
+import { useBracketConnectors } from "../composables/useBracketConnectors";
 
 const props = defineProps({
   matches: {
@@ -24,13 +25,40 @@ const final = computed(() => props.matches.find((m) => m.label === "Final"));
 const onMatchClick = (match) => {
   emit("match-click", match);
 };
+
+// --- DYNAMIC SVG CONNECTORS ---
+const containerRef = ref(null);
+const { paths, updateConnectors } = useBracketConnectors(containerRef);
+
+const updatePaths = async () => {
+  const connections = [
+    { startId: "ko-sf1", endId: "ko-final", type: "orthogonal" },
+    { startId: "ko-sf2", endId: "ko-final", type: "orthogonal" },
+    { startId: "ko-sf1", endId: "ko-bronze", type: "dashed" },
+    { startId: "ko-sf2", endId: "ko-bronze", type: "dashed" },
+  ];
+  await updateConnectors(connections);
+};
+
+// Watch for matches changing to redraw
+watch(() => props.matches, updatePaths, { deep: true });
+
+onMounted(() => {
+  window.addEventListener("resize", updatePaths);
+  // Initial draw
+  setTimeout(updatePaths, 100);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updatePaths);
+});
 </script>
 
 <template>
   <div
     class="w-full overflow-x-auto pb-8 pt-4 px-4 bg-white/50 rounded-xl border border-gray-100"
   >
-    <div class="relative min-w-[800px] h-[500px]">
+    <div ref="containerRef" class="relative min-w-[800px] h-[500px]">
       <!-- SVG Connector Layer -->
       <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
         <defs>
@@ -46,51 +74,22 @@ const onMatchClick = (match) => {
           </marker>
         </defs>
 
-        <!-- SF1 (Top-Left) to Final (Mid-Right) [Winner] -->
-        <!-- Start: 280,80 -> Go Right 100 -> Go Down to 200 -> Go Right to 450 -->
         <path
-          d="M 280 80 L 380 80 L 380 200 L 450 200"
-          stroke="#cbd5e1"
+          v-for="(path, i) in paths"
+          :key="i"
+          :d="path.d"
+          :stroke="path.type === 'dashed' ? '#f1f5f9' : '#cbd5e1'"
           stroke-width="2"
           fill="none"
-          marker-end="url(#arrowhead-ko)"
-        />
-
-        <!-- SF2 (Bot-Left) to Final (Mid-Right) [Winner] -->
-        <!-- Start: 280,320 -> Go Right 100 -> Go Up to 200 -> Go Right to 450 -->
-        <path
-          d="M 280 320 L 380 320 L 380 200 L 450 200"
-          stroke="#cbd5e1"
-          stroke-width="2"
-          fill="none"
-          marker-end="url(#arrowhead-ko)"
-        />
-
-        <!-- SF1 (Top-Left) to Bronze (Bot-Right) [Loser - Dashed] -->
-        <!-- 280,90 -> Right -> Down -> Right -->
-        <path
-          d="M 280 90 L 360 90 L 360 420 L 450 420"
-          stroke="#f1f5f9"
-          stroke-width="2"
-          stroke-dasharray="4"
-          fill="none"
-        />
-
-        <!-- SF2 (Bot-Left) to Bronze (Bot-Right) [Loser - Dashed] -->
-        <!-- 280,330 -> Right -> Down -> Right -->
-        <path
-          d="M 280 330 L 360 330 L 360 420 L 450 420"
-          stroke="#f1f5f9"
-          stroke-width="2"
-          stroke-dasharray="4"
-          fill="none"
+          :stroke-dasharray="path.type === 'dashed' ? '4' : '0'"
+          :marker-end="path.type === 'orthogonal' ? 'url(#arrowhead-ko)' : ''"
         />
       </svg>
 
       <!-- Matches Layer -->
       <div class="absolute inset-0 z-10">
         <!-- SF1 -->
-        <div class="absolute top-10 left-8 w-64">
+        <div id="ko-sf1" class="absolute top-10 left-8 w-64">
           <div
             class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
           >
@@ -111,7 +110,7 @@ const onMatchClick = (match) => {
         </div>
 
         <!-- SF2 -->
-        <div class="absolute top-70 left-8 w-64" style="top: 280px">
+        <div id="ko-sf2" class="absolute top-70 left-8 w-64" style="top: 280px">
           <div
             class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
           >
@@ -133,6 +132,7 @@ const onMatchClick = (match) => {
 
         <!-- Final -->
         <div
+          id="ko-final"
           class="absolute top-40 left-120 w-64"
           style="left: 480px; top: 160px"
         >
@@ -159,6 +159,7 @@ const onMatchClick = (match) => {
         <!-- Bronze -->
         <div
           v-if="bronze"
+          id="ko-bronze"
           class="absolute w-64"
           style="left: 480px; top: 380px"
         >
@@ -176,6 +177,7 @@ const onMatchClick = (match) => {
         </div>
         <div
           v-else
+          id="ko-bronze"
           class="absolute w-64 h-24 bg-gray-50 rounded flex items-center justify-center text-gray-300 text-xs border border-dashed border-gray-200"
           style="left: 480px; top: 380px"
         >
