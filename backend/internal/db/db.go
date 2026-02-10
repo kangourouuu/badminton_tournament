@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -120,5 +121,21 @@ func CreateSchema(ctx context.Context) error {
 			return err
 		}
 	}
+
+	// Seed default tournament if missing
+	defaultID := uuid.MustParse("00000000-0000-0000-0000-000000000000") // From frontend
+	count, _ := DB.NewSelect().Model((*models.Tournament)(nil)).Where("id = ?", defaultID).Count(ctx)
+	if count == 0 {
+		log.Println("Seeding default tournament...")
+		_, err := DB.NewInsert().Model(&models.Tournament{
+			ID:     defaultID,
+			Name:   "Badminton Tournament 2026",
+			Status: "active",
+		}).Exec(ctx)
+		if err != nil {
+			log.Printf("Failed to seed tournament: %v", err)
+		}
+	}
+
 	return nil
 }

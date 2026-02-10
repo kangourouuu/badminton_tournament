@@ -83,7 +83,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 	}
 	_, err = h.DB.NewInsert().Model(group).Returning("*").Exec(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create group"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create group: " + err.Error()})
 		return
 	}
 
@@ -122,7 +122,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 	}
 	_, err = h.DB.NewInsert().Model(m2).Exec(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create matches"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create matches: " + err.Error()})
 		return
 	}
 
