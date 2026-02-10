@@ -1,9 +1,7 @@
 package api
 
 import (
-	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/uptrace/bun"
