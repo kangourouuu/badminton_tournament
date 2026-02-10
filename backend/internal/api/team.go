@@ -66,7 +66,7 @@ func (h *Handler) GenerateTeams(c *gin.Context) {
 	// For simplicity, we just add. Admin can clear manually if needed or we assume fresh run.
 	
 	if len(teams) > 0 {
-		_, err = h.DB.NewInsert().Model(&teams).Exec(ctx)
+		_, err = h.DB.NewInsert().Model(&teams).Returning("*").Exec(ctx)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -149,7 +149,7 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 		Name:      p1.Name + " & " + p2.Name,
 	}
 
-	if _, err := h.DB.NewInsert().Model(team).Exec(ctx); err != nil {
+	if _, err := h.DB.NewInsert().Model(team).Returning("*").Exec(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
