@@ -41,36 +41,94 @@ const { paths, updateConnectors } = useBracketConnectors(containerRef);
 
 const updatePaths = async () => {
   const gid = props.groupId;
+
+  // Helper for path styles
+  const getStyle = (match, type) => {
+    // type: 'win' or 'lose'
+    if (!match || !match.winner_id) {
+      // Pending: Faint Guidelines
+      return {
+        stroke: "#cbd5e1",
+        opacity: 0.3,
+        dash: type === "lose" ? "4" : "0",
+        marker: type === "win" ? "url(#arrowhead)" : "",
+      };
+    }
+
+    // Finished Match
+    if (type === "win") {
+      return {
+        stroke: "#a855f7", // Purple-500
+        opacity: 1.0,
+        dash: "0",
+        marker: "url(#arrowhead-active)",
+      };
+    } else {
+      return {
+        stroke: "#94a3b8", // Slate-400
+        opacity: 0.4,
+        dash: "4",
+        marker: "",
+      };
+    }
+  };
+
+  const sM1 = getStyle(m1.value, "win");
+  const sM1_L = getStyle(m1.value, "lose");
+
+  const sM2 = getStyle(m2.value, "win");
+  const sM2_L = getStyle(m2.value, "lose");
+
+  const sM3 = getStyle(winners.value, "lose"); // Winner qualifies (no line), Loser to M5
+  // Actually Winner of M3 goes to Knockout (handled by PublicView lines).
+  // Only Loser of M3 goes to Decider (M5).
+
+  const sM4 = getStyle(losers.value, "win"); // Winner to Decider (M5), Loser Out
+
   const connections = [
     // M1 -> Winners (Win)
     {
       startId: `gsl-${gid}-m1`,
       endId: `gsl-${gid}-winners`,
       type: "orthogonal",
+      ...sM1,
     },
     // M1 -> Losers (Lose)
-    { startId: `gsl-${gid}-m1`, endId: `gsl-${gid}-losers`, type: "dashed" },
+    {
+      startId: `gsl-${gid}-m1`,
+      endId: `gsl-${gid}-losers`,
+      type: "orthogonal",
+      ...sM1_L,
+    },
 
     // M2 -> Winners (Win)
     {
       startId: `gsl-${gid}-m2`,
       endId: `gsl-${gid}-winners`,
       type: "orthogonal",
+      ...sM2,
     },
     // M2 -> Losers (Lose)
-    { startId: `gsl-${gid}-m2`, endId: `gsl-${gid}-losers`, type: "dashed" },
+    {
+      startId: `gsl-${gid}-m2`,
+      endId: `gsl-${gid}-losers`,
+      type: "orthogonal",
+      ...sM2_L,
+    },
 
     // Winners -> Decider (Lose)
     {
       startId: `gsl-${gid}-winners`,
       endId: `gsl-${gid}-decider`,
-      type: "dashed",
+      type: "orthogonal",
+      ...sM3,
     },
     // Losers -> Decider (Win)
     {
       startId: `gsl-${gid}-losers`,
       endId: `gsl-${gid}-decider`,
       type: "orthogonal",
+      ...sM4,
     },
   ];
   await updateConnectors(connections);
@@ -89,9 +147,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    class="w-full overflow-x-auto pb-8 pt-4 px-4 bg-gray-50/50 rounded-xl border border-gray-100"
-  >
+  <div class="w-full overflow-x-auto pb-8 pt-4 px-4">
     <div ref="containerRef" class="relative min-w-[1000px] h-[400px]">
       <!-- SVG Connector Layer -->
       <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
@@ -106,17 +162,28 @@ onUnmounted(() => {
           >
             <polygon points="0 0, 10 3.5, 0 7" fill="#cbd5e1" />
           </marker>
+          <marker
+            id="arrowhead-active"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="#a855f7" />
+          </marker>
         </defs>
 
         <path
           v-for="(path, i) in paths"
           :key="i"
           :d="path.d"
-          :stroke="path.type === 'dashed' ? '#f1f5f9' : '#cbd5e1'"
+          :stroke="path.stroke || '#cbd5e1'"
           stroke-width="2"
           fill="none"
-          :stroke-dasharray="path.type === 'dashed' ? '4' : '0'"
-          :marker-end="path.type === 'orthogonal' ? 'url(#arrowhead)' : ''"
+          :stroke-opacity="path.opacity || 1"
+          :stroke-dasharray="path.dash || '0'"
+          :marker-end="path.marker"
         />
       </svg>
 

@@ -55,9 +55,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    class="w-full overflow-x-auto pb-8 pt-4 px-4 bg-white/50 rounded-xl border border-gray-100"
-  >
+  <div class="w-full overflow-x-auto pb-8 pt-4 px-4">
     <div ref="containerRef" class="relative min-w-[800px] h-[500px]">
       <!-- SVG Connector Layer -->
       <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
