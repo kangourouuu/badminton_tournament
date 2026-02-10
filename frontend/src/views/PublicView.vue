@@ -272,17 +272,12 @@ onUnmounted(() => {
             </h3>
 
             <div
-              v-if="knockoutGroup"
               id="knockout-stage"
               class="transform scale-110 origin-top-center"
             >
-              <KnockoutGrid :matches="knockoutGroup.matches" />
-            </div>
-            <div
-              v-else
-              class="h-96 border-4 border-dashed border-slate-700 rounded-3xl flex items-center justify-center text-slate-600 font-mono text-lg"
-            >
-              Waiting for Group Stages...
+              <KnockoutGrid
+                :matches="knockoutGroup ? knockoutGroup.matches : []"
+              />
             </div>
           </div>
         </div>
