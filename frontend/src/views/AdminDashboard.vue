@@ -260,18 +260,23 @@ const saveRules = async () => {
 
         <div v-for="group in groups" :key="group.id" class="space-y-4">
           <h3 class="text-xl font-bold text-gray-800">{{ group.name }}</h3>
-          <KnockoutGrid
-            v-if="group.type === 'KNOCKOUT'"
-            :matches="group.matches || []"
-            :is-admin="true"
-            @match-click="(m) => openScoreModal(m, 'KNOCKOUT')"
-          />
-          <GSLGrid
-            v-else
-            :matches="group.matches || []"
-            :is-admin="true"
-            @match-click="(m) => openScoreModal(m, 'GROUP')"
-          />
+
+          <div
+            class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 overflow-hidden"
+          >
+            <KnockoutGrid
+              v-if="group.type === 'KNOCKOUT'"
+              :matches="group.matches || []"
+              :is-admin="true"
+              @match-click="(m) => openScoreModal(m, 'KNOCKOUT')"
+            />
+            <GSLGrid
+              v-else
+              :matches="group.matches || []"
+              :is-admin="true"
+              @match-click="(m) => openScoreModal(m, 'GROUP')"
+            />
+          </div>
         </div>
       </div>
 

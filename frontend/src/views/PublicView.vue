@@ -255,9 +255,7 @@ onUnmounted(() => {
                     >MESONEER</span
                   >
                 </div>
-                <div
-                  class="bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-white/5 shadow-inner"
-                >
+                <div class="p-4">
                   <GSLGrid :matches="group.matches" :group-id="group.id" />
                 </div>
               </div>
@@ -290,9 +288,7 @@ onUnmounted(() => {
                     >LAB</span
                   >
                 </div>
-                <div
-                  class="bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-white/5 shadow-inner"
-                >
+                <div class="p-4">
                   <GSLGrid :matches="group.matches" :group-id="group.id" />
                 </div>
               </div>
