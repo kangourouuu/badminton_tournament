@@ -1,10 +1,16 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import api from "../services/api";
 
 const props = defineProps({
   participants: { type: Array, required: true },
   teams: { type: Array, required: true },
+});
+
+onMounted(() => {
+  console.log("ParticipantsManager Mounted");
+  console.log("Participants:", props.participants);
+  console.log("Teams:", props.teams);
 });
 
 const emit = defineEmits(["refresh"]);
