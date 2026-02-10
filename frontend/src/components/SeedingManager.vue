@@ -45,6 +45,7 @@ const randomizeAndCreate = async () => {
     selectedTeamIds.value = [];
     emit("refresh");
   } catch (err) {
+    console.error("Group creation failed:", err);
     alert("Failed: " + (err.response?.data?.error || err.message));
   } finally {
     isProcessing.value = false;
