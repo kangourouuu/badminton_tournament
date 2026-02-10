@@ -1,7 +1,9 @@
 package api
 
 import (
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -53,6 +55,12 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 			return
 		}
 	}
+
+	// Shuffle Teams for Random Seeding
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(req.TeamIDs), func(i, j int) {
+		req.TeamIDs[i], req.TeamIDs[j] = req.TeamIDs[j], req.TeamIDs[i]
+	})
 
 	// Check if already in active match
 	count, err := h.DB.NewSelect().Model((*models.Match)(nil)).

@@ -18,6 +18,7 @@ const fetchTeams = async () => {
   try {
     const res = await api.get("/teams");
     teams.value = res.data || [];
+    console.log("TeamManager Teams:", teams.value); // Debugging
   } catch (err) {
     console.error("Failed to fetch teams", err);
   }

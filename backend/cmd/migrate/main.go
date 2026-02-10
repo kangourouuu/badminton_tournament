@@ -22,6 +22,7 @@ func main() {
 	_, err := db.DB.Exec(`
 		ALTER TABLE teams ADD COLUMN IF NOT EXISTS pool TEXT DEFAULT '';
 		ALTER TABLE groups ADD COLUMN IF NOT EXISTS pool TEXT DEFAULT '';
+		ALTER TABLE matches ADD COLUMN IF NOT EXISTS sets_detail JSONB;
 	`)
 	if err != nil {
 		log.Printf("Warning: failed to alter tables: %v", err)

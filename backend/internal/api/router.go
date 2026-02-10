@@ -30,7 +30,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	admin := api.Group("/")
 	admin.Use(AuthMiddleware())
 	{
-		admin.POST("/teams/generate", h.GenerateTeams)
+
 		admin.POST("/teams", h.CreateTeam)
 		admin.PUT("/teams/:id", h.UpdateTeam)
 		admin.DELETE("/teams/:id", h.DeleteTeam)
