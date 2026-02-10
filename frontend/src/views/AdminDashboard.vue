@@ -25,21 +25,44 @@ const selectedMatch = ref(null);
 const fetchData = async () => {
   loading.value = true;
   try {
-    const [pRes, tRes, gRes, rRes] = await Promise.all([
+    const results = await Promise.allSettled([
       api.get("/participants"),
       api.get("/teams"),
       api.get("/groups"),
       api.get("/public/rules"),
     ]);
 
-    participants.value = pRes.data || [];
-    teams.value = tRes.data || [];
-    groups.value = gRes.data || [];
-    rulesContent.value = rRes.data.content || "";
+    // 0: Participants
+    if (results[0].status === "fulfilled") {
+      participants.value = results[0].value.data || [];
+    } else {
+      console.error("Failed to load participants", results[0].reason);
+    }
+
+    // 1: Teams
+    if (results[1].status === "fulfilled") {
+      teams.value = results[1].value.data || [];
+    } else {
+      console.error("Failed to load teams", results[1].reason);
+    }
+
+    // 2: Groups
+    if (results[2].status === "fulfilled") {
+      groups.value = results[2].value.data || [];
+    } else {
+      console.error("Failed to load groups", results[2].reason);
+    }
+
+    // 3: Rules
+    if (results[3].status === "fulfilled") {
+      rulesContent.value = results[3].value.data.content || "";
+    } else {
+      console.error("Failed to load rules", results[3].reason);
+    }
   } catch (err) {
-    console.error("Fetch error", err);
+    console.error("Critical Fetch error", err);
     if (err.response?.status === 401) {
-      router.push("/login");
+      router.push("/login"); // Handle global auth error if needed
     }
   } finally {
     loading.value = false;
