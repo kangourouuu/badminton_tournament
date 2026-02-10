@@ -2,15 +2,14 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
-import TheWheel from "../components/TheWheel.vue";
 import GSLGrid from "../components/GSLGrid.vue";
 import KnockoutGrid from "../components/KnockoutGrid.vue";
 import ScoreModal from "../components/ScoreModal.vue";
-
-import TeamManager from "../components/TeamManager.vue";
+import ParticipantsManager from "../components/ParticipantsManager.vue";
+import SeedingManager from "../components/SeedingManager.vue";
 
 const router = useRouter();
-const activeTab = ref("brackets"); // 'data', 'teams', 'brackets'
+const activeTab = ref("brackets"); // 'brackets', 'seeding', 'participants', 'rules'
 
 // Data State
 const participants = ref([]);
@@ -19,48 +18,8 @@ const groups = ref([]);
 const loading = ref(false);
 
 // Modal State
-const showCreateGroupModal = ref(false);
 const showScoreModal = ref(false);
 const selectedMatch = ref(null);
-
-// Create Group Form
-const newGroupName = ref("");
-const selectedPool = ref("Mesoneer"); // Default
-const selectedTeamIds = ref([]);
-
-// -- FILTERS (Participants) --
-const filters = ref({
-  search: "",
-  pool: "ALL",
-  status: "ALL",
-});
-
-const filteredParticipants = computed(() => {
-  return participants.value.filter((p) => {
-    const matchSearch =
-      !filters.value.search ||
-      p.name.toLowerCase().includes(filters.value.search.toLowerCase()) ||
-      p.email.toLowerCase().includes(filters.value.search.toLowerCase());
-    const matchPool =
-      filters.value.pool === "ALL" || p.pool === filters.value.pool;
-
-    // Status: Assigned if team_id is present?
-    // Wait, participant model doesn't have team_id explicitly shown in previous view_file of models.go?
-    // Let's check models.go again... Participant struct doesn't have TeamID.
-    // Team struct has Player1ID and Player2ID.
-    // So "Assigned" means p.ID is in some team.
-    // I need a set of assigned player IDs.
-    // I can compute it efficiently.
-    const isAssigned = (id) =>
-      teams.value.some((t) => t.player1_id === id || t.player2_id === id);
-
-    const status = isAssigned(p.id) ? "ASSIGNED" : "AVAILABLE";
-    const matchStatus =
-      filters.value.status === "ALL" || filters.value.status === status;
-
-    return matchSearch && matchPool && matchStatus;
-  });
-});
 
 // -- INIT --
 const fetchData = async () => {
@@ -94,38 +53,6 @@ const logout = () => {
   router.push("/login");
 };
 
-// -- TEAMS --
-const onTeamsGenerated = () => {
-  fetchData(); // Refresh teams list
-};
-
-// -- GROUPS --
-const availableTeams = computed(() => {
-  // Filter by selected pool
-  return teams.value.filter((t) => t.pool === selectedPool.value);
-});
-
-const createGroup = async () => {
-  if (selectedTeamIds.value.length !== 4 || !newGroupName.value) return;
-
-  try {
-    await api.post("/groups", {
-      name: newGroupName.value,
-      pool: selectedPool.value,
-      tournament_id: "00000000-0000-0000-0000-000000000000", // Placeholder or fetch actual
-      team_ids: selectedTeamIds.value,
-    });
-    showCreateGroupModal.value = false;
-    newGroupName.value = "";
-    selectedTeamIds.value = [];
-    fetchData();
-  } catch (err) {
-    alert(
-      "Failed to create group: " + (err.response?.data?.error || err.message),
-    );
-  }
-};
-
 // -- MATCHES --
 const openScoreModal = (match) => {
   selectedMatch.value = match;
@@ -146,22 +73,7 @@ const saveMatchResult = async (data) => {
   }
 };
 
-// -- RULES --
-const rulesContent = ref("");
-const savingRules = ref(false);
-
-const saveRules = async () => {
-  savingRules.value = true;
-  try {
-    await api.put("/admin/rules", { content: rulesContent.value });
-    alert("Rules saved successfully!");
-  } catch (err) {
-    alert("Failed to save rules: " + err.message);
-  } finally {
-    savingRules.value = false;
-  }
-};
-
+// -- BRACKETS AUTOMATION --
 const generateKnockout = async () => {
   if (
     !confirm(
@@ -180,6 +92,22 @@ const generateKnockout = async () => {
     alert("Failed: " + (err.response?.data?.error || err.message));
   } finally {
     loading.value = false;
+  }
+};
+
+// -- RULES --
+const rulesContent = ref("");
+const savingRules = ref(false);
+
+const saveRules = async () => {
+  savingRules.value = true;
+  try {
+    await api.put("/admin/rules", { content: rulesContent.value });
+    alert("Rules saved successfully!");
+  } catch (err) {
+    alert("Failed to save rules: " + err.message);
+  } finally {
+    savingRules.value = false;
   }
 };
 </script>
@@ -219,37 +147,26 @@ const generateKnockout = async () => {
           Brackets & Matches
         </button>
         <button
-          @click="activeTab = 'teams'"
+          @click="activeTab = 'seeding'"
           :class="
-            activeTab === 'teams'
+            activeTab === 'seeding'
               ? 'bg-violet-100 text-violet-700 border-violet-200'
               : 'text-gray-500 hover:bg-gray-50 border-transparent'
           "
           class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
         >
-          Team Generation
+          Group Seeding
         </button>
         <button
-          @click="activeTab = 'teams'"
+          @click="activeTab = 'participants'"
           :class="
-            activeTab === 'teams'
+            activeTab === 'participants'
               ? 'bg-violet-100 text-violet-700 border-violet-200'
               : 'text-gray-500 hover:bg-gray-50 border-transparent'
           "
           class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
         >
-          Seeding & Teams
-        </button>
-        <button
-          @click="activeTab = 'data'"
-          :class="
-            activeTab === 'data'
-              ? 'bg-violet-100 text-violet-700 border-violet-200'
-              : 'text-gray-500 hover:bg-gray-50 border-transparent'
-          "
-          class="px-4 py-2 rounded-full font-bold text-sm border transition-colors whitespace-nowrap"
-        >
-          Participants Data
+          Participants & Teams
         </button>
         <button
           @click="activeTab = 'rules'"
@@ -277,7 +194,7 @@ const generateKnockout = async () => {
           v-if="groups.length === 0"
           class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-200 text-gray-400"
         >
-          No groups created yet. Go create one!
+          No groups created yet. Go create one in "Group Seeding"!
         </div>
 
         <div v-for="group in groups" :key="group.id" class="space-y-4">
@@ -317,132 +234,18 @@ const generateKnockout = async () => {
         </div>
       </div>
 
-      <!-- Tab: TEAMS -->
-      <div v-show="activeTab === 'teams'" class="space-y-8">
-        <div class="flex justify-between items-center">
-          <h3 class="text-xl font-bold text-gray-800">Seeding & Teams</h3>
-          <button
-            @click="showCreateGroupModal = true"
-            class="px-4 py-2 bg-violet-600 text-white rounded-sm hover:bg-violet-700 shadow-sm transition-colors flex items-center gap-2"
-          >
-            <span>+ Create Group</span>
-          </button>
-        </div>
-
-        <!-- Manual Management -->
-        <TeamManager />
-
-        <hr class="border-gray-200" />
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Wheel 1: Mesoneer -->
-          <div class="space-y-4">
-            <h3
-              class="font-bold text-gray-700 border-l-4 border-violet-500 pl-2"
-            >
-              Mesoneer Pool
-            </h3>
-            <TheWheel pool="Mesoneer" @teams-generated="onTeamsGenerated" />
-          </div>
-          <!-- Wheel 2: Lab -->
-          <div class="space-y-4">
-            <h3 class="font-bold text-gray-700 border-l-4 border-blue-500 pl-2">
-              Lab Pool
-            </h3>
-            <TheWheel pool="Lab" @teams-generated="onTeamsGenerated" />
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h3 class="font-bold text-gray-800 mb-4">All Generated Teams</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <div
-              v-for="team in teams"
-              :key="team.id"
-              class="p-3 bg-gray-50 border border-gray-100 rounded-sm text-sm"
-            >
-              <div class="font-medium text-gray-900">{{ team.name }}</div>
-              <div class="text-xs text-gray-500 mt-1">{{ team.pool }}</div>
-            </div>
-          </div>
-        </div>
+      <!-- Tab: SEEDING -->
+      <div v-show="activeTab === 'seeding'" class="space-y-6">
+        <SeedingManager :teams="teams" @refresh="fetchData" />
       </div>
 
-      <!-- Tab: DATA -->
-      <div v-show="activeTab === 'data'" class="space-y-6">
-        <!-- Filter Toolbar -->
-        <div
-          class="bg-white p-4 rounded-lg border border-gray-200 flex flex-wrap gap-4 items-center"
-        >
-          <div class="flex-1 min-w-[200px]">
-            <input
-              v-model="filters.search"
-              type="text"
-              placeholder="Search by name, email..."
-              class="w-full border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
-            />
-          </div>
-          <select
-            v-model="filters.pool"
-            class="border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
-          >
-            <option value="ALL">All Pools</option>
-            <option value="Mesoneer">Mesoneer</option>
-            <option value="Lab">Lab</option>
-          </select>
-          <select
-            v-model="filters.status"
-            class="border-gray-300 rounded-sm focus:ring-violet-500 focus:border-violet-500"
-          >
-            <option value="ALL">All Status</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="ASSIGNED">Assigned</option>
-          </select>
-        </div>
-
-        <div
-          class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden overflow-x-auto"
-        >
-          <table class="w-full text-sm text-left">
-            <thead
-              class="bg-gray-50 text-gray-500 font-medium uppercase text-xs"
-            >
-              <tr>
-                <th class="px-6 py-3">Name</th>
-                <th class="px-6 py-3">Email</th>
-                <th class="px-6 py-3">Pool</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr
-                v-for="p in filteredParticipants"
-                :key="p.id"
-                class="hover:bg-gray-50 transition-colors"
-              >
-                <td class="px-6 py-3 font-medium text-gray-900">
-                  {{ p.name }}
-                </td>
-                <td class="px-6 py-3 text-gray-500">{{ p.email }}</td>
-                <td class="px-6 py-3">
-                  <span
-                    :class="{
-                      'bg-violet-100 text-violet-700': p.pool === 'Mesoneer',
-                      'bg-blue-100 text-blue-700': p.pool === 'Lab',
-                    }"
-                    class="px-2 py-0.5 rounded-full text-xs font-medium"
-                  >
-                    {{ p.pool }}
-                  </span>
-                </td>
-              </tr>
-              <tr v-if="participants.length === 0">
-                <td colspan="3" class="px-6 py-8 text-center text-gray-400">
-                  No participants found.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <!-- Tab: PARTICIPANTS -->
+      <div v-show="activeTab === 'participants'" class="space-y-6">
+        <ParticipantsManager
+          :participants="participants"
+          :teams="teams"
+          @refresh="fetchData"
+        />
       </div>
 
       <!-- Tab: RULES -->
@@ -473,109 +276,6 @@ const generateKnockout = async () => {
         </div>
       </div>
     </main>
-
-    <!-- Modal: Create Group -->
-    <div
-      v-if="showCreateGroupModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-    >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 space-y-6">
-        <h3 class="text-xl font-bold text-gray-800">
-          Create New Bracket Group
-        </h3>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Group Name</label
-            >
-            <input
-              v-model="newGroupName"
-              type="text"
-              placeholder="e.g. Group A"
-              class="w-full border border-gray-300 rounded-sm p-2 focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2"
-              >Pool</label
-            >
-            <div class="flex gap-4">
-              <label class="flex items-center gap-2">
-                <input
-                  type="radio"
-                  v-model="selectedPool"
-                  value="Mesoneer"
-                  class="text-violet-600 focus:ring-violet-500"
-                />
-                <span class="text-sm">Mesoneer</span>
-              </label>
-              <label class="flex items-center gap-2">
-                <input
-                  type="radio"
-                  v-model="selectedPool"
-                  value="Lab"
-                  class="text-violet-600 focus:ring-violet-500"
-                />
-                <span class="text-sm">Lab</span>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2"
-              >Select 4 Teams</label
-            >
-            <div
-              class="h-48 overflow-y-auto border border-gray-200 rounded-sm p-2 space-y-1 bg-gray-50"
-            >
-              <label
-                v-for="team in availableTeams"
-                :key="team.id"
-                class="flex items-center space-x-2 p-2 hover:bg-white rounded-sm cursor-pointer transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  :value="team.id"
-                  v-model="selectedTeamIds"
-                  :disabled="
-                    selectedTeamIds.length >= 4 &&
-                    !selectedTeamIds.includes(team.id)
-                  "
-                  class="text-violet-600 focus:ring-violet-500 rounded-sm"
-                />
-                <span class="text-sm text-gray-700"
-                  >{{ team.name }}
-                  <span class="text-xs text-gray-400"
-                    >({{ team.pool }})</span
-                  ></span
-                >
-              </label>
-            </div>
-            <p class="text-xs text-gray-500 mt-1 text-right">
-              {{ selectedTeamIds.length }} / 4 selected
-            </p>
-          </div>
-        </div>
-
-        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-          <button
-            @click="showCreateGroupModal = false"
-            class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            @click="createGroup"
-            :disabled="selectedTeamIds.length !== 4 || !newGroupName"
-            class="px-4 py-2 bg-violet-600 text-white rounded-sm hover:bg-violet-700 disabled:opacity-50 transition-colors"
-          >
-            Create Bracket
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- Modal: Score -->
     <ScoreModal

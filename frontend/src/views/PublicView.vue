@@ -46,7 +46,10 @@ const getElementCenter = (id) => {
 
 const updatePaths = async () => {
   await nextTick();
-  if (!knockoutGroup.value) return;
+  if (!knockoutGroup.value) {
+    paths.value = [];
+    return;
+  }
 
   const newPaths = [];
 
@@ -55,14 +58,9 @@ const updatePaths = async () => {
     if (!teamId) return null;
     for (const g of groups.value) {
       if (g.name === "KNOCKOUT") continue;
-      // Check if this team won the winners match or decider match
-      // Actually, simplified: check if team is in the group?
-      // Better: Check if team was the winner of M3 or M5 in that group
-      // For now, just check match labels
-      // Or just check if team is in matches?
-      // "Winner of Group" = M3 Winner. "Runner up" = M5 Winner.
+      // Simple heuristic: check if team is in any match of this group
       for (const m of g.matches || []) {
-        if (m.winner_id === teamId) return g.id;
+        if (m.team_a_id === teamId || m.team_b_id === teamId) return g.id;
       }
     }
     return null;
@@ -74,7 +72,7 @@ const updatePaths = async () => {
   const sf2 = kMatches.find((m) => m.label === "SF2");
 
   const targets = [
-    { match: sf1, targetId: "knockout-sf1" },
+    { match: sf1, targetId: "knockout-sf1" }, // Need IDs on KnockoutGrid
     { match: sf2, targetId: "knockout-sf2" },
   ];
 
@@ -82,24 +80,32 @@ const updatePaths = async () => {
     if (!match) return;
 
     // Connect Team A
-    const groupA = findSourceGroup(match.team_a_id);
-    if (groupA) {
-      const startId = `group-winner-${groupA}`;
-      const p1 = getElementCenter(startId);
-      const p2 = getElementCenter(targetId);
-      if (p1 && p2) {
-        newPaths.push(drawConnector(p1, p2));
+    if (match.team_a_id) {
+      const groupA = findSourceGroup(match.team_a_id);
+      if (groupA) {
+        // In GSLGrid, we need to ID the "winner" box or similar.
+        // For now, let's just target the whole group card center?
+        // Or we add IDs to GSLGrid.
+        // Let's target the group container.
+        const startId = `group-${groupA}`;
+        const p1 = getElementCenter(startId);
+        const p2 = getElementCenter(targetId);
+        if (p1 && p2) {
+          newPaths.push(drawConnector(p1, p2));
+        }
       }
     }
 
     // Connect Team B
-    const groupB = findSourceGroup(match.team_b_id);
-    if (groupB) {
-      const startId = `group-winner-${groupB}`;
-      const p1 = getElementCenter(startId);
-      const p2 = getElementCenter(targetId);
-      if (p1 && p2) {
-        newPaths.push(drawConnector(p1, p2));
+    if (match.team_b_id) {
+      const groupB = findSourceGroup(match.team_b_id);
+      if (groupB) {
+        const startId = `group-${groupB}`;
+        const p1 = getElementCenter(startId);
+        const p2 = getElementCenter(targetId);
+        if (p1 && p2) {
+          newPaths.push(drawConnector(p1, p2));
+        }
       }
     }
   });
@@ -109,8 +115,6 @@ const updatePaths = async () => {
 
 const drawConnector = (p1, p2) => {
   // Bezier from P1 to P2
-  // If P1 is Left (x < P2.x), curve right. If P1 is Right, curve left.
-  // Control points: 50% of horizontal distance
   const cx = (p1.x + p2.x) / 2;
   return {
     d: `M ${p1.x} ${p1.y} C ${cx} ${p1.y}, ${cx} ${p2.y}, ${p2.x} ${p2.y}`,
@@ -168,6 +172,7 @@ onUnmounted(() => {
           <div
             v-for="group in mesoneerGroups"
             :key="group.id"
+            :id="`group-${group.id}`"
             class="scale-90 origin-top"
           >
             <div class="text-center text-white mb-2 font-bold">
@@ -184,8 +189,10 @@ onUnmounted(() => {
           >
             The Finals
           </h3>
-          <div v-if="knockoutGroup" class="scale-100">
+          <div v-if="knockoutGroup" class="scale-100" id="knockout-stage">
             <KnockoutGrid :matches="knockoutGroup.matches" />
+            <!-- Note: KnockoutGrid needs to expose IDs for SF1/SF2 if we want precise connecting -->
+            <!-- We will assume KnockoutGrid has slots or ids we can target, or we wrap it -->
           </div>
           <div v-else class="text-gray-500 italic">
             Knockout Stage not yet generated
@@ -202,6 +209,7 @@ onUnmounted(() => {
           <div
             v-for="group in labGroups"
             :key="group.id"
+            :id="`group-${group.id}`"
             class="scale-90 origin-top"
           >
             <div class="text-center text-white mb-2 font-bold">
