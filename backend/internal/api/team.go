@@ -12,11 +12,23 @@ import (
 
 func (h *Handler) ListTeams(c *gin.Context) {
 	pool := c.Query("pool")
+	available := c.Query("available") == "true"
+
 	var teams []models.Team
 	query := h.DB.NewSelect().Model(&teams).Relation("Player1").Relation("Player2")
 
 	if pool != "" {
 		query.Where("tm.pool = ?", pool)
+	}
+
+	if available {
+		// Filter out teams that are already in any match
+		// Subquery: SELECT team_a_id FROM matches UNION SELECT team_b_id FROM matches
+		// Bun doesn't support UNION easily in subquery builder sometimes, so we can do WHERE NOT EXISTS or NOT IN
+		// Simpler: WHERE id NOT IN (SELECT team_a_id FROM matches) AND id NOT IN (SELECT team_b_id FROM matches)
+		
+		query.Where("id NOT IN (SELECT team_a_id FROM matches WHERE team_a_id IS NOT NULL)")
+		query.Where("id NOT IN (SELECT team_b_id FROM matches WHERE team_b_id IS NOT NULL)")
 	}
 
 	err := query.Order("tm.created_at DESC").Scan(c.Request.Context())

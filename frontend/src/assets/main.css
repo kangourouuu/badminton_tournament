@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Custom Utilities */
+@layer components {
+  .input-material {
+    @apply w-full border-b-2 border-purple-200 bg-transparent px-2 py-2 outline-none transition-colors rounded-none;
+  }
+  .input-material:focus {
+    @apply border-violet-600 bg-purple-50/50;
+  }
+
+  .btn-animated {
+    @apply transform active:scale-95 transition-transform duration-150 ease-in-out hover:brightness-110 shadow-sm hover:shadow-md;
+  }
+}
+
 @theme {
   --font-sans: "Outfit", sans-serif;
 }
