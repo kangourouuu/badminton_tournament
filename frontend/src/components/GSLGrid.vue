@@ -123,7 +123,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
-            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+            class="h-24 w-64 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting M1
           </div>
@@ -139,7 +139,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
-            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+            class="h-24 w-64 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting M2
           </div>
@@ -163,7 +163,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
-            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+            class="h-24 w-64 bg-purple-50/30 border-2 border-dashed border-purple-100 rounded flex items-center justify-center text-purple-300 text-xs font-mono"
           >
             Waiting Winners
           </div>
@@ -183,7 +183,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
-            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+            class="h-24 w-64 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting Elimination
           </div>
@@ -207,7 +207,7 @@ const onMatchClick = (match) => {
           </div>
           <div
             v-else
-            class="h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+            class="h-24 w-64 bg-orange-50/30 border-2 border-dashed border-orange-100 rounded flex items-center justify-center text-orange-300 text-xs font-mono"
           >
             Waiting Decider
           </div>

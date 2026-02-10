@@ -47,8 +47,9 @@ const onMatchClick = (match) => {
         </defs>
 
         <!-- SF1 (Top-Left) to Final (Mid-Right) [Winner] -->
+        <!-- Start: 280,80 -> Go Right 100 -> Go Down to 200 -> Go Right to 450 -->
         <path
-          d="M 280 80 C 350 80, 350 200, 450 200"
+          d="M 280 80 L 380 80 L 380 200 L 450 200"
           stroke="#cbd5e1"
           stroke-width="2"
           fill="none"
@@ -56,8 +57,9 @@ const onMatchClick = (match) => {
         />
 
         <!-- SF2 (Bot-Left) to Final (Mid-Right) [Winner] -->
+        <!-- Start: 280,320 -> Go Right 100 -> Go Up to 200 -> Go Right to 450 -->
         <path
-          d="M 280 320 C 350 320, 350 200, 450 200"
+          d="M 280 320 L 380 320 L 380 200 L 450 200"
           stroke="#cbd5e1"
           stroke-width="2"
           fill="none"
@@ -65,8 +67,9 @@ const onMatchClick = (match) => {
         />
 
         <!-- SF1 (Top-Left) to Bronze (Bot-Right) [Loser - Dashed] -->
+        <!-- 280,90 -> Right -> Down -> Right -->
         <path
-          d="M 280 90 C 330 90, 330 420, 450 420"
+          d="M 280 90 L 360 90 L 360 420 L 450 420"
           stroke="#f1f5f9"
           stroke-width="2"
           stroke-dasharray="4"
@@ -74,8 +77,9 @@ const onMatchClick = (match) => {
         />
 
         <!-- SF2 (Bot-Left) to Bronze (Bot-Right) [Loser - Dashed] -->
+        <!-- 280,330 -> Right -> Down -> Right -->
         <path
-          d="M 280 330 C 330 330, 330 420, 450 420"
+          d="M 280 330 L 360 330 L 360 420 L 450 420"
           stroke="#f1f5f9"
           stroke-width="2"
           stroke-dasharray="4"
@@ -86,41 +90,49 @@ const onMatchClick = (match) => {
       <!-- Matches Layer -->
       <div class="absolute inset-0 z-10">
         <!-- SF1 -->
-        <div v-if="sf1" class="absolute top-10 left-8 w-64">
+        <div class="absolute top-10 left-8 w-64">
           <div
             class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
           >
             Semi-Final 1
           </div>
-          <MatchCard :match="sf1" :is-admin="isAdmin" @click="onMatchClick" />
-        </div>
-        <div
-          v-else
-          class="absolute top-10 left-8 h-24 w-64 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
-        >
-          Waiting SF1
+          <MatchCard
+            v-if="sf1"
+            :match="sf1"
+            :is-admin="isAdmin"
+            @click="onMatchClick"
+          />
+          <div
+            v-else
+            class="h-24 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
+          >
+            Waiting for Qualifiers
+          </div>
         </div>
 
         <!-- SF2 -->
-        <div v-if="sf2" class="absolute top-70 left-8 w-64" style="top: 280px">
+        <div class="absolute top-70 left-8 w-64" style="top: 280px">
           <div
             class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
           >
             Semi-Final 2
           </div>
-          <MatchCard :match="sf2" :is-admin="isAdmin" @click="onMatchClick" />
-        </div>
-        <div
-          v-else
-          class="absolute top-70 left-8 w-64 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
-          style="top: 280px"
-        >
-          Waiting SF2
+          <MatchCard
+            v-if="sf2"
+            :match="sf2"
+            :is-admin="isAdmin"
+            @click="onMatchClick"
+          />
+          <div
+            v-else
+            class="h-24 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
+          >
+            Waiting for Qualifiers
+          </div>
         </div>
 
         <!-- Final -->
         <div
-          v-if="final"
           class="absolute top-40 left-120 w-64"
           style="left: 480px; top: 160px"
         >
@@ -130,18 +142,18 @@ const onMatchClick = (match) => {
             <span>🏆 Grand Final</span>
           </div>
           <MatchCard
+            v-if="final"
             :match="final"
             :is-admin="isAdmin"
             @click="onMatchClick"
             class="border-amber-400 ring-4 ring-amber-50 shadow-xl"
           />
-        </div>
-        <div
-          v-else
-          class="absolute w-64 h-24 bg-amber-50 rounded flex items-center justify-center text-amber-300 text-xs border border-amber-100"
-          style="left: 480px; top: 160px"
-        >
-          Waiting Final
+          <div
+            v-else
+            class="h-24 bg-amber-50/50 border-2 border-amber-200 rounded flex items-center justify-center text-amber-400 text-xs font-bold tracking-widest uppercase"
+          >
+            TBD
+          </div>
         </div>
 
         <!-- Bronze -->
