@@ -137,6 +137,25 @@ const saveMatchResult = async (data) => {
 // Chunk 2: Update Grids in Template.
 // Chunk 3: Update ScoreModal in Template.
 
+// ... (rest of simple script logic if any remains before template starts?)
+// Actually lines 121-144 were garbage.
+// The real code continues at line 145 (generateKnockout) in previous version but here I am creating a replacement block that bridges the gap properly.
+// Wait, looking at file content:
+// Line 118: };
+// Line 119: // ... (rest of script)
+// Line 121: // ... (in template)
+// ... garbage ...
+// Line 144: // -- BRACKETS AUTOMATION --
+// So I need to replace from line 119 to 144 with *nothing* (or just the commented out section if needed, but better clear it).
+
+// AND update template below.
+// Since replace_file_content works on contiguous blocks or multi-chunks.
+// I will use multi-chunks.
+
+// Chunk 1: Remove garbage from script.
+// Chunk 2: Update Grids in Template.
+// Chunk 3: Update ScoreModal in Template.
+
 // -- RULES --
 const rulesContent = ref("");
 const savingRules = ref(false);
