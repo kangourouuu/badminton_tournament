@@ -124,7 +124,7 @@ const save = () => {
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity"
   >
     <div
-      class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all"
+      class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all font-outfit"
     >
       <!-- Header -->
       <div class="bg-slate-900 px-6 py-4 flex justify-between items-center">
@@ -267,14 +267,14 @@ const save = () => {
             <label class="block text-xs font-bold text-slate-400 uppercase mb-4"
               >Set Scores (Best of 3)</label
             >
-            <div class="space-y-4">
+            <div class="space-y-4 font-outfit">
               <div
                 v-for="(set, i) in sets"
                 :key="i"
                 class="flex items-center gap-4"
               >
                 <div
-                  class="w-12 text-xs font-bold text-slate-400 uppercase pt-2"
+                  class="w-16 text-xs font-bold text-slate-400 uppercase pt-2"
                 >
                   Set {{ i + 1 }}
                 </div>
@@ -282,14 +282,14 @@ const save = () => {
                   v-model="set.a"
                   type="number"
                   placeholder="0"
-                  class="input-material text-center font-mono"
+                  class="input-material text-center font-bold text-lg text-slate-700 focus:text-violet-700"
                 />
-                <span class="text-slate-300">-</span>
+                <span class="text-slate-300 font-bold">-</span>
                 <input
                   v-model="set.b"
                   type="number"
                   placeholder="0"
-                  class="input-material text-center font-mono"
+                  class="input-material text-center font-bold text-lg text-slate-700 focus:text-violet-700"
                 />
               </div>
             </div>
