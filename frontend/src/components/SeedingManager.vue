@@ -51,6 +51,46 @@ const randomizeAndCreate = async () => {
     isProcessing.value = false;
   }
 };
+
+const autoGenerate = async () => {
+  if (poolTeams.value.length === 0) {
+    alert("No teams in this pool.");
+    return;
+  }
+  if (poolTeams.value.length % 4 !== 0) {
+    alert(
+      `Cannot auto-generate: You have ${poolTeams.value.length} available teams, but each group requires exactly 4 teams.`,
+    );
+    return;
+  }
+
+  const prefix = prompt("Enter Group Name Prefix (e.g. 'Group'):", "Group");
+  if (prefix === null) return;
+
+  if (
+    !confirm(
+      `This will randomly assign ALL ${poolTeams.value.length} available teams in ${selectedPool.value} pool into ${poolTeams.value.length / 4} groups. Proceed?`,
+    )
+  )
+    return;
+
+  isProcessing.value = true;
+  try {
+    await api.post("/groups/auto-generate", {
+      pool: selectedPool.value,
+      tournament_id: "00000000-0000-0000-0000-000000000000",
+      name_prefix: prefix,
+    });
+
+    alert("Groups generated and seeded successfully!");
+    emit("refresh");
+  } catch (err) {
+    console.error("Auto-generation failed:", err);
+    alert("Failed: " + (err.response?.data?.error || err.message));
+  } finally {
+    isProcessing.value = false;
+  }
+};
 </script>
 
 <template>
@@ -90,12 +130,23 @@ const randomizeAndCreate = async () => {
         </button>
       </div>
 
-      <div class="text-sm text-gray-500">
-        Selected:
-        <span class="font-bold text-gray-900">{{
-          selectedTeamIds.length
-        }}</span>
-        / 4
+      <div class="text-sm text-gray-500 flex items-center gap-4">
+        <div>
+          Selected:
+          <span class="font-bold text-gray-900">{{
+            selectedTeamIds.length
+          }}</span>
+          / 4
+        </div>
+        <div class="h-4 w-px bg-gray-200"></div>
+        <button
+          @click="autoGenerate"
+          :disabled="isProcessing || poolTeams.length === 0"
+          class="text-violet-600 hover:text-violet-800 font-bold flex items-center gap-1 disabled:opacity-50"
+        >
+          <span>🎲</span>
+          Auto-Generate All
+        </button>
       </div>
     </div>
 
