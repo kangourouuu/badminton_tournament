@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
@@ -12,10 +14,10 @@ import (
 )
 
 type CreateGroupRequest struct {
-	Name          string      `json:"name"`
-	Pool          string      `json:"pool"` // "Mesoneer" or "Lab"
-	TournamentID  uuid.UUID   `json:"tournament_id"`
-	TeamIDs       []uuid.UUID `json:"team_ids"` // Expect exactly 4 IDs
+	Name         string      `json:"name"`
+	Pool         string      `json:"pool"` // "Mesoneer" or "Lab"
+	TournamentID uuid.UUID   `json:"tournament_id"`
+	TeamIDs      []uuid.UUID `json:"team_ids"` // Expect exactly 4 IDs
 }
 
 func (h *Handler) CreateGroup(c *gin.Context) {
@@ -37,13 +39,12 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// 1. Validate Teams: Must be in same Pool and not busy
-	// Fetch teams to check pool
 	var teams []models.Team
 	if err := h.DB.NewSelect().Model(&teams).Where("id IN (?)", bun.In(req.TeamIDs)).Scan(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
 		return
 	}
-	
+
 	if len(teams) != 4 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "One or more teams not found"})
 		return
@@ -87,41 +88,8 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		return
 	}
 
-	// 2. Create 5 Matches (GSL Structure)
-	// M5 (Decider)
-	m5 := &models.Match{GroupID: group.ID, Label: "Decider"} // Match 5
-	_, _ = h.DB.NewInsert().Model(m5).Exec(ctx)
-
-	// M3 (Winners Match) -> Win: Qualify, Lose: Go to M5
-	m3 := &models.Match{GroupID: group.ID, Label: "Winners", NextMatchLoseID: m5.ID}
-	_, _ = h.DB.NewInsert().Model(m3).Exec(ctx)
-	
-	// M4 (Losers Match) -> Win: Go to M5, Lose: Out
-	m4 := &models.Match{GroupID: group.ID, Label: "Losers", NextMatchWinID: m5.ID}
-	_, _ = h.DB.NewInsert().Model(m4).Exec(ctx)
-
-	// M1 (Opening A) -> Win: M3, Lose: M4
-	m1 := &models.Match{
-		GroupID:         group.ID,
-		Label:           "M1",
-		TeamAID:         req.TeamIDs[0],
-		TeamBID:         req.TeamIDs[1],
-		NextMatchWinID:  m3.ID,
-		NextMatchLoseID: m4.ID,
-	}
-	_, _ = h.DB.NewInsert().Model(m1).Exec(ctx)
-
-	// M2 (Opening B) -> Win: M3, Lose: M4
-	m2 := &models.Match{
-		GroupID:         group.ID,
-		Label:           "M2",
-		TeamAID:         req.TeamIDs[2],
-		TeamBID:         req.TeamIDs[3],
-		NextMatchWinID:  m3.ID,
-		NextMatchLoseID: m4.ID,
-	}
-	_, err = h.DB.NewInsert().Model(m2).Exec(ctx)
-	if err != nil {
+	// 3. Create GSL Matches
+	if err := h.createGSLMatches(ctx, group.ID, req.TeamIDs); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create matches: " + err.Error()})
 		return
 	}
@@ -129,10 +97,148 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"group_id": group.ID, "status": "created"})
 }
 
+type AutoGenerateGroupsRequest struct {
+	Pool         string    `json:"pool"`
+	TournamentID uuid.UUID `json:"tournament_id"`
+	NamePrefix   string    `json:"name_prefix"`
+}
+
+func (h *Handler) AutoGenerateGroups(c *gin.Context) {
+	var req AutoGenerateGroupsRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.Pool == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Pool is required"})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// Fetch available teams in pool
+	var availableTeams []models.Team
+	err := h.DB.NewSelect().
+		Model(&availableTeams).
+		Where("pool = ?", req.Pool).
+		Where("id NOT IN (SELECT team_a_id FROM matches WHERE team_a_id IS NOT NULL UNION SELECT team_b_id FROM matches WHERE team_b_id IS NOT NULL)").
+		Scan(ctx)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch available teams: " + err.Error()})
+		return
+	}
+
+	numTeams := len(availableTeams)
+	if numTeams == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No available teams in " + req.Pool + " pool"})
+		return
+	}
+
+	if numTeams%4 != 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot auto-generate: " + fmt.Sprintf("%d", numTeams) + " teams available, but groups must have exactly 4 teams"})
+		return
+	}
+
+	// Shuffle
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(numTeams, func(i, j int) {
+		availableTeams[i], availableTeams[j] = availableTeams[j], availableTeams[i]
+	})
+
+	var createdGroups []uuid.UUID
+	for i := 0; i < numTeams; i += 4 {
+		name := req.NamePrefix
+		if name == "" {
+			name = "Group"
+		}
+		name = fmt.Sprintf("%s %d", name, (i/4)+1)
+
+		group := &models.Group{
+			TournamentID: req.TournamentID,
+			Name:         name,
+			Pool:         req.Pool,
+		}
+		_, err := h.DB.NewInsert().Model(group).Returning("*").Exec(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create group: " + err.Error()})
+			return
+		}
+
+		teamIDs := []uuid.UUID{
+			availableTeams[i].ID,
+			availableTeams[i+1].ID,
+			availableTeams[i+2].ID,
+			availableTeams[i+3].ID,
+		}
+
+		if err := h.createGSLMatches(ctx, group.ID, teamIDs); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create matches for group " + name + ": " + err.Error()})
+			return
+		}
+		createdGroups = append(createdGroups, group.ID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":         "created",
+		"groups_created": len(createdGroups),
+		"group_ids":      createdGroups,
+	})
+}
+
+func (h *Handler) createGSLMatches(ctx context.Context, groupID uuid.UUID, teamIDs []uuid.UUID) error {
+	// M5 (Decider)
+	m5 := &models.Match{GroupID: groupID, Label: "Decider"}
+	_, err := h.DB.NewInsert().Model(m5).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	// M3 (Winners Match)
+	m3 := &models.Match{GroupID: groupID, Label: "Winners", NextMatchLoseID: m5.ID}
+	_, err = h.DB.NewInsert().Model(m3).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	// M4 (Losers Match)
+	m4 := &models.Match{GroupID: groupID, Label: "Losers", NextMatchWinID: m5.ID}
+	_, err = h.DB.NewInsert().Model(m4).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	// M1 (Opening A)
+	m1 := &models.Match{
+		GroupID:         groupID,
+		Label:           "M1",
+		TeamAID:         teamIDs[0],
+		TeamBID:         teamIDs[1],
+		NextMatchWinID:  m3.ID,
+		NextMatchLoseID: m4.ID,
+	}
+	_, err = h.DB.NewInsert().Model(m1).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	// M2 (Opening B)
+	m2 := &models.Match{
+		GroupID:         groupID,
+		Label:           "M2",
+		TeamAID:         teamIDs[2],
+		TeamBID:         teamIDs[3],
+		NextMatchWinID:  m3.ID,
+		NextMatchLoseID: m4.ID,
+	}
+	_, err = h.DB.NewInsert().Model(m2).Exec(ctx)
+	return err
+}
+
 func (h *Handler) ListGroups(c *gin.Context) {
 	var groups []models.Group
-	
-	// Eager load matches and teams
+
 	err := h.DB.NewSelect().Model(&groups).
 		Relation("Matches", func(q *bun.SelectQuery) *bun.SelectQuery {
 			return q.Order("label ASC").
