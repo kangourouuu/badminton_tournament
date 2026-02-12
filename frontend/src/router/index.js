@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import PublicView from "../views/PublicView.vue";
+import TournamentMap from "../views/TournamentMap.vue";
 import LoginView from "../views/LoginView.vue";
 import AdminDashboard from "../views/AdminDashboard.vue";
 import RulesView from "../views/RulesView.vue";
@@ -11,7 +11,7 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: PublicView,
+      component: TournamentMap,
     },
     {
       path: "/login",
