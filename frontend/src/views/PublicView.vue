@@ -121,12 +121,12 @@ const updatePaths = async () => {
 };
 
 const drawFlowConnector = (p1, p2, type) => {
-  // Sigmoid / Bezier Curve
-  const cx = (p1.x + p2.x) / 2;
+  // Orthogonal path for "exact" feel
+  const midX = p1.x + (p2.x - p1.x) * 0.4;
   return {
-    d: `M ${p1.x} ${p1.y} C ${cx} ${p1.y}, ${cx} ${p2.y}, ${p2.x} ${p2.y}`,
+    d: `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`,
     color: type === "Mesoneer" ? "#60a5fa" : "#34d399", // Blue / Emerald
-    dash: "5,5",
+    dash: "0", // Solid line
     width: 2,
   };
 };
@@ -195,11 +195,7 @@ onUnmounted(() => {
         Initializing Tournament System...
       </div>
 
-      <div
-        v-else
-        ref="containerRef"
-        class="relative flex gap-20 min-w-[1800px]"
-      >
+      <div v-else ref="containerRef" class="relative flex gap-8">
         <!-- SVG Layer (Global Connectors) -->
         <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
           <path
@@ -228,9 +224,9 @@ onUnmounted(() => {
         </svg>
 
         <!-- Left Panel: Groups (Mesoneer Top, Lab Bottom) -->
-        <div class="flex flex-col gap-24 w-3/4 z-10">
+        <div class="flex flex-col gap-16 flex-1 z-10">
           <!-- Top Row: Mesoneer -->
-          <div class="border-b border-slate-800/50 pb-12">
+          <div class="pb-8">
             <h3
               class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 uppercase tracking-widest mb-8 pl-4 border-l-4 border-blue-500"
             >
@@ -297,7 +293,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Right Panel: Knockout (Sticky) -->
-        <div class="w-1/4 z-10 flex flex-col justify-center">
+        <div class="w-auto z-10 flex flex-col justify-center px-12">
           <div class="sticky top-10">
             <h3
               class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-500 uppercase tracking-widest mb-12 text-center drop-shadow-sm"

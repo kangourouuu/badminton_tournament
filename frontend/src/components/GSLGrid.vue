@@ -49,8 +49,8 @@ const updatePaths = async () => {
       // Pending: Faint Guidelines
       return {
         stroke: "#cbd5e1",
-        opacity: 0.3,
-        dash: type === "lose" ? "4" : "0",
+        opacity: 0.4, // Increased from 0.3
+        dash: "0", // Solid for "exact" look
         marker: type === "win" ? "url(#arrowhead)" : "",
       };
     }
@@ -66,8 +66,8 @@ const updatePaths = async () => {
     } else {
       return {
         stroke: "#94a3b8", // Slate-400
-        opacity: 0.4,
-        dash: "4",
+        opacity: 0.6, // Increased from 0.4
+        dash: "0", // Solid for "exact" look
         marker: "",
       };
     }

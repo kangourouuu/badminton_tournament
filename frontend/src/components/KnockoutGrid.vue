@@ -34,8 +34,8 @@ const updatePaths = async () => {
   const connections = [
     { startId: "ko-sf1", endId: "ko-final", type: "orthogonal" },
     { startId: "ko-sf2", endId: "ko-final", type: "orthogonal" },
-    { startId: "ko-sf1", endId: "ko-bronze", type: "dashed" },
-    { startId: "ko-sf2", endId: "ko-bronze", type: "dashed" },
+    { startId: "ko-sf1", endId: "ko-bronze", type: "orthogonal" },
+    { startId: "ko-sf2", endId: "ko-bronze", type: "orthogonal" },
   ];
   await updateConnectors(connections);
 };
