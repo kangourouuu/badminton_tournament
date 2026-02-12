@@ -1,36 +1,40 @@
 @import "tailwindcss";
 
-/* Custom Utilities */
-@layer components {
-  .input-material {
-    @apply w-full border-b-2 border-purple-200 bg-transparent px-2 py-2 outline-none transition-colors rounded-none;
-  }
-  .input-material:focus {
-    @apply border-violet-600 bg-purple-50/50;
-  }
-
-  .btn-animated {
-    @apply transform active:scale-95 transition-transform duration-150 ease-in-out hover:brightness-110 shadow-sm hover:shadow-md;
-  }
-}
-
+/* Global Styles */
 @theme {
   --font-sans: "Outfit", sans-serif;
 }
 
 :root {
   font-family: "Outfit", sans-serif;
+  background-color: #f9fafb; /* gray-50 */
+  color: #111827; /* gray-900 */
 }
 
-.bg-playbook,
-.bg-tech-pattern {
-  background-color: #fdfbff;
-  background-image: radial-gradient(#e9d5ff 2px, transparent 2px);
-  background-size: 32px 32px;
+body {
+  @apply bg-gray-50 text-gray-900;
 }
 
-.bg-playbook {
-  background-color: #fdfbff;
-  background-image: radial-gradient(#e9d5ff 2px, transparent 2px);
-  background-size: 32px 32px;
+/* Custom Utilities */
+@layer components {
+  /* Material-style underline input */
+  .input-material {
+    @apply block w-full border-0 border-b-2 border-gray-200 bg-transparent px-0 py-2.5 text-gray-900 focus:border-violet-600 focus:ring-0 sm:text-sm transition-colors;
+  }
+
+  /* Flat, solid primary button */
+  .btn-primary {
+    @apply inline-flex justify-center rounded-[4px] border border-transparent bg-violet-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all active:scale-95;
+  }
+
+  .btn-animated {
+    @apply transform active:scale-95 transition-transform duration-150 ease-in-out hover:brightness-110;
+  }
+}
+
+.bg-tech-pattern,
+.bg-dot-pattern {
+  background-color: #f9fafb;
+  background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+  background-size: 24px 24px;
 }
