@@ -87,7 +87,7 @@ onUnmounted(() => {
       <!-- Matches Layer -->
       <div class="absolute inset-0 z-10">
         <!-- SF1 -->
-        <div id="ko-sf1" class="absolute top-10 left-8 w-64">
+        <div class="absolute top-10 left-8 w-64">
           <div
             class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
           >
@@ -95,12 +95,14 @@ onUnmounted(() => {
           </div>
           <MatchCard
             v-if="sf1"
+            id="ko-sf1"
             :match="sf1"
             :is-admin="isAdmin"
             @click="onMatchClick"
           />
           <div
             v-else
+            id="ko-sf1"
             class="h-24 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting for Qualifiers
@@ -108,7 +110,7 @@ onUnmounted(() => {
         </div>
 
         <!-- SF2 -->
-        <div id="ko-sf2" class="absolute top-70 left-8 w-64" style="top: 280px">
+        <div class="absolute top-70 left-8 w-64" style="top: 280px">
           <div
             class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
           >
@@ -116,12 +118,14 @@ onUnmounted(() => {
           </div>
           <MatchCard
             v-if="sf2"
+            id="ko-sf2"
             :match="sf2"
             :is-admin="isAdmin"
             @click="onMatchClick"
           />
           <div
             v-else
+            id="ko-sf2"
             class="h-24 bg-white/50 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs font-mono"
           >
             Waiting for Qualifiers
@@ -130,7 +134,6 @@ onUnmounted(() => {
 
         <!-- Final -->
         <div
-          id="ko-final"
           class="absolute top-40 left-120 w-64"
           style="left: 480px; top: 160px"
         >
@@ -141,6 +144,7 @@ onUnmounted(() => {
           </div>
           <MatchCard
             v-if="final"
+            id="ko-final"
             :match="final"
             :is-admin="isAdmin"
             @click="onMatchClick"
@@ -148,6 +152,7 @@ onUnmounted(() => {
           />
           <div
             v-else
+            id="ko-final"
             class="h-24 bg-amber-50/50 border-2 border-amber-200 rounded flex items-center justify-center text-amber-400 text-xs font-bold tracking-widest uppercase"
           >
             TBD
@@ -157,7 +162,6 @@ onUnmounted(() => {
         <!-- Bronze -->
         <div
           v-if="bronze"
-          id="ko-bronze"
           class="absolute w-64"
           style="left: 480px; top: 380px"
         >
@@ -167,6 +171,7 @@ onUnmounted(() => {
             🥉 Bronze Match
           </div>
           <MatchCard
+            id="ko-bronze"
             :match="bronze"
             :is-admin="isAdmin"
             @click="onMatchClick"
@@ -175,11 +180,15 @@ onUnmounted(() => {
         </div>
         <div
           v-else
-          id="ko-bronze"
           class="absolute w-64 h-24 bg-gray-50 rounded flex items-center justify-center text-gray-300 text-xs border border-dashed border-gray-200"
           style="left: 480px; top: 380px"
         >
-          Waiting Bronze
+          <div
+            id="ko-bronze"
+            class="w-full h-full flex items-center justify-center"
+          >
+            Waiting Bronze
+          </div>
         </div>
       </div>
     </div>

@@ -34,15 +34,19 @@ const fetchData = async () => {
 const paths = ref([]);
 const containerRef = ref(null);
 
-const getElementCenter = (id) => {
+const getElementPoint = (id, side = "center") => {
   const el = document.getElementById(id);
   if (!el || !containerRef.value) return null;
   const rect = el.getBoundingClientRect();
   const cRect = containerRef.value.getBoundingClientRect();
-  return {
-    x: rect.left - cRect.left + rect.width / 2,
-    y: rect.top - cRect.top + rect.height / 2,
-  };
+  const x =
+    side === "right"
+      ? rect.right - cRect.left
+      : side === "left"
+        ? rect.left - cRect.left
+        : rect.left - cRect.left + rect.width / 2;
+  const y = rect.top - cRect.top + rect.height / 2;
+  return { x, y };
 };
 
 const updatePaths = async () => {
@@ -54,54 +58,12 @@ const updatePaths = async () => {
 
   const newPaths = [];
 
-  // Helper to find which group a team came from
-  const findSourceGroup = (teamId) => {
-    if (!teamId) return null;
-    for (const g of groups.value) {
-      if (g.name === "KNOCKOUT") continue;
-      // Simple heuristic: check if team is in any match of this group
-      for (const m of g.matches || []) {
-        if (m.team_a_id === teamId || m.team_b_id === teamId) return g.id;
-      }
-    }
-    return null;
-  };
-
-  // Parse Knockout Matches to find input teams
-  const kMatches = knockoutGroup.value.matches || [];
-  const sf1 = kMatches.find((m) => m.label === "SF1");
-  const sf2 = kMatches.find((m) => m.label === "SF2");
-
-  const targets = [
-    { match: sf1, targetId: "knockout-sf1" }, // Need IDs on KnockoutGrid
-    { match: sf2, targetId: "knockout-sf2" },
-  ];
-
-  targets.forEach(({ match, targetId }) => {
-    if (!match) return;
-
-    // Connect Team A (Source Group A)
-    // We assume SF1 Team A comes from Group A (Mesoneer) or P1
-    // Logic: Connect Group Card Center to SF1 Input
-
-    // Heuristic: Connect Logic
-    // Group A matches -> SF1
-    // Group B matches -> SF2
-    // We iterate ALL groups to draw lines to SF
-    // If Group Pool = Mesoneer -> SF1? No, logic is complex.
-    // Let's draw generic "Qualification Lines" from all groups to the center.
-  });
-
-  // NEW LOGIC: Draw lines from Group Containers to Knockout Bracket
-  // Mesoneer Groups -> SF1 / SF2 (Flowing Right)
-  // Lab Groups -> SF1 / SF2 (Flowing Right)
-
+  // Connect Decider matches of GSL groups to Knockout Semifinals
   mesoneerGroups.value.forEach((g) => {
-    const startId = `group-${g.id}`;
-    const endId = `knockout-stage`; // Target the whole stage or specific SF
-    const p1 = getElementCenter(startId);
-    // Target SF1 for Mesoneer (Visual approximation)
-    const p2 = getElementCenter("knockout-sf1");
+    const startId = `gsl-${g.id}-decider`;
+    const endId = `knockout-sf1`; // Target ID on KnockoutGrid
+    const p1 = getElementPoint(startId, "right");
+    const p2 = getElementPoint("ko-sf1", "left"); // SF1 MatchCard ID
 
     if (p1 && p2) {
       newPaths.push(drawFlowConnector(p1, p2, "Mesoneer"));
@@ -109,11 +71,11 @@ const updatePaths = async () => {
   });
 
   labGroups.value.forEach((g) => {
-    const startId = `group-${g.id}`;
-    // Target SF2 for Lab (Visual approximation)
-    const p2 = getElementCenter("knockout-sf2");
-    if (getElementCenter(startId) && p2) {
-      newPaths.push(drawFlowConnector(getElementCenter(startId), p2, "Lab"));
+    const startId = `gsl-${g.id}-decider`;
+    const p1 = getElementPoint(startId, "right");
+    const p2 = getElementPoint("ko-sf2", "left"); // SF2 MatchCard ID
+    if (p1 && p2) {
+      newPaths.push(drawFlowConnector(p1, p2, "Lab"));
     }
   });
 
@@ -132,10 +94,9 @@ const drawFlowConnector = (p1, p2, type) => {
 };
 
 const drawConnector = (p1, p2) => {
-  // Bezier from P1 to P2
-  const cx = (p1.x + p2.x) / 2;
+  const midX = p1.x + (p2.x - p1.x) * 0.4;
   return {
-    d: `M ${p1.x} ${p1.y} C ${cx} ${p1.y}, ${cx} ${p2.y}, ${p2.x} ${p2.y}`,
+    d: `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`,
     color: "#cbd5e1", // slate-300
   };
 };
