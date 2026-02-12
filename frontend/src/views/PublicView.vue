@@ -58,24 +58,38 @@ const updatePaths = async () => {
 
   const newPaths = [];
 
-  // Connect Decider matches of GSL groups to Knockout Semifinals
-  mesoneerGroups.value.forEach((g) => {
-    const startId = `gsl-${g.id}-decider`;
-    const endId = `knockout-sf1`; // Target ID on KnockoutGrid
-    const p1 = getElementPoint(startId, "right");
-    const p2 = getElementPoint("ko-sf1", "left"); // SF1 MatchCard ID
+  // Connect Winners (M3) and Decider (M5) of GSL groups to Knockout Stage
+  // Winner of Winners Match -> SF1 (Seed 1)
+  // Winner of Decider Match -> SF2 (Seed 2)
 
-    if (p1 && p2) {
-      newPaths.push(drawFlowConnector(p1, p2, "Mesoneer"));
+  mesoneerGroups.value.forEach((g) => {
+    // Qualifier 1: Winner of the "Winners Match"
+    const start1 = getElementPoint(`gsl-${g.id}-winners`, "right");
+    const end1 = getElementPoint("ko-sf1", "left");
+    if (start1 && end1) {
+      newPaths.push(drawFlowConnector(start1, end1, "Mesoneer"));
+    }
+
+    // Qualifier 2: Winner of the "Decider Match"
+    const start2 = getElementPoint(`gsl-${g.id}-decider`, "right");
+    const end2 = getElementPoint("ko-sf2", "left");
+    if (start2 && end2) {
+      newPaths.push(drawFlowConnector(start2, end2, "Mesoneer"));
     }
   });
 
   labGroups.value.forEach((g) => {
-    const startId = `gsl-${g.id}-decider`;
-    const p1 = getElementPoint(startId, "right");
-    const p2 = getElementPoint("ko-sf2", "left"); // SF2 MatchCard ID
-    if (p1 && p2) {
-      newPaths.push(drawFlowConnector(p1, p2, "Lab"));
+    // Same logic for Lab pool
+    const start1 = getElementPoint(`gsl-${g.id}-winners`, "right");
+    const end1 = getElementPoint("ko-sf1", "left");
+    if (start1 && end1) {
+      newPaths.push(drawFlowConnector(start1, end1, "Lab"));
+    }
+
+    const start2 = getElementPoint(`gsl-${g.id}-decider`, "right");
+    const end2 = getElementPoint("ko-sf2", "left");
+    if (start2 && end2) {
+      newPaths.push(drawFlowConnector(start2, end2, "Lab"));
     }
   });
 
@@ -198,21 +212,21 @@ onUnmounted(() => {
                 v-for="group in mesoneerGroups"
                 :key="group.id"
                 :id="`group-${group.id}`"
-                class="rounded-2xl p-4 transition-transform duration-300 hover:scale-[1.01]"
+                class="transition-transform duration-300 hover:scale-[1.01]"
               >
                 <div
-                  class="px-2 py-2 mb-2 border-b border-indigo-500/30 flex justify-between items-center"
+                  class="px-2 py-2 mb-2 border-b border-indigo-500/10 flex justify-between items-center"
                 >
                   <span
-                    class="font-black text-2xl text-indigo-100 uppercase tracking-widest font-outfit"
+                    class="font-black text-2xl text-indigo-100/50 uppercase tracking-widest font-outfit"
                     >{{ group.name }}</span
                   >
                   <span
-                    class="text-[10px] font-bold tracking-widest text-blue-300 bg-blue-900/40 px-2 py-1 rounded border border-blue-500/20"
+                    class="text-[8px] font-bold tracking-widest text-blue-300/30 px-2 py-0.5 rounded border border-blue-500/10"
                     >MESONEER</span
                   >
                 </div>
-                <div class="p-4">
+                <div class="">
                   <GSLGrid :matches="group.matches" :group-id="group.id" />
                 </div>
               </div>
@@ -231,21 +245,21 @@ onUnmounted(() => {
                 v-for="group in labGroups"
                 :key="group.id"
                 :id="`group-${group.id}`"
-                class="rounded-2xl p-4 transition-transform duration-300 hover:scale-[1.01]"
+                class="transition-transform duration-300 hover:scale-[1.01]"
               >
                 <div
-                  class="px-2 py-2 mb-2 border-b border-emerald-500/30 flex justify-between items-center"
+                  class="px-2 py-2 mb-2 border-b border-emerald-500/10 flex justify-between items-center"
                 >
                   <span
-                    class="font-black text-2xl text-emerald-100 uppercase tracking-widest font-outfit"
+                    class="font-black text-2xl text-emerald-100/50 uppercase tracking-widest font-outfit"
                     >{{ group.name }}</span
                   >
                   <span
-                    class="text-[10px] font-bold tracking-widest text-emerald-300 bg-emerald-900/40 px-2 py-1 rounded border border-emerald-500/20"
+                    class="text-[8px] font-bold tracking-widest text-emerald-300/30 px-2 py-0.5 rounded border border-emerald-500/10"
                     >LAB</span
                   >
                 </div>
-                <div class="p-4">
+                <div class="">
                   <GSLGrid :matches="group.matches" :group-id="group.id" />
                 </div>
               </div>

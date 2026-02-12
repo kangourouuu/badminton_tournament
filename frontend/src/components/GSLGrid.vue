@@ -130,6 +130,24 @@ const updatePaths = async () => {
       type: "orthogonal",
       ...sM4,
     },
+    // Elimination: Loser of Losers Match (M4)
+    {
+      startId: `gsl-${gid}-losers`,
+      endId: `elim-m4-${gid}`, // Virtual ID or just endpoint
+      type: "straight",
+      stroke: "#ef4444", // red-500
+      opacity: 0.8,
+      marker: "url(#crosshead)",
+    },
+    // Elimination: Loser of Decider Match (M5)
+    {
+      startId: `gsl-${gid}-decider`,
+      endId: `elim-m5-${gid}`,
+      type: "straight",
+      stroke: "#ef4444",
+      opacity: 0.8,
+      marker: "url(#crosshead)",
+    },
   ];
   await updateConnectors(connections);
 };
@@ -147,8 +165,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto pb-8 pt-4 px-4">
-    <div ref="containerRef" class="relative min-w-[1000px] h-[400px]">
+  <div class="w-full pb-8 pt-4 px-4">
+    <div ref="containerRef" class="relative min-w-[800px] h-[400px]">
       <!-- SVG Connector Layer -->
       <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
         <defs>
@@ -171,6 +189,23 @@ onUnmounted(() => {
             orient="auto"
           >
             <polygon points="0 0, 10 3.5, 0 7" fill="#a855f7" />
+          </marker>
+
+          <!-- Crosshead for Elimination -->
+          <marker
+            id="crosshead"
+            markerWidth="10"
+            markerHeight="10"
+            refX="5"
+            refY="5"
+            orient="auto"
+          >
+            <path
+              d="M 2 2 L 8 8 M 8 2 L 2 8"
+              stroke="#ef4444"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
           </marker>
         </defs>
 
@@ -309,6 +344,16 @@ onUnmounted(() => {
             Waiting Decider
           </div>
         </div>
+
+        <!-- ELIMINATION ENDPOINTS (Hidden anchors) -->
+        <div
+          :id="`elim-m4-${groupId}`"
+          class="absolute left-1/2 top-[85%] w-1 h-1"
+        ></div>
+        <div
+          :id="`elim-m5-${groupId}`"
+          class="absolute left-full top-1/2 w-1 h-1"
+        ></div>
       </div>
     </div>
   </div>
