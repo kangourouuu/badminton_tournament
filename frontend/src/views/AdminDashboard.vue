@@ -2,8 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
-import GroupCard from "../components/GroupCard.vue";
-import MatchCard from "../components/MatchCard.vue";
+import TournamentMap from "./TournamentMap.vue";
 import ScoreModal from "../components/ScoreModal.vue";
 import ParticipantsManager from "../components/ParticipantsManager.vue";
 import SeedingManager from "../components/SeedingManager.vue";
@@ -252,39 +251,9 @@ const saveRules = async () => {
         </div>
 
         <div
-          v-if="groups.length === 0"
-          class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-200 text-gray-400"
+          class="bg-white rounded-[4px] border border-gray-100 p-0 overflow-hidden h-[800px] relative"
         >
-          No groups created yet. Go create one in "Group Seeding"!
-        </div>
-
-        <div v-for="group in groups" :key="group.id" class="space-y-4">
-          <h3 class="text-xl font-bold text-gray-800">{{ group.name }}</h3>
-
-          <div
-            v-if="group.name === 'KNOCKOUT'"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            <div v-for="m in group.matches" :key="m.id" class="space-y-1">
-              <div
-                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
-              >
-                {{ m.label }}
-              </div>
-              <MatchCard
-                :match="m"
-                :is-admin="true"
-                @click="openScoreModal(m, 'KNOCKOUT')"
-              />
-            </div>
-          </div>
-          <div v-else class="overflow-x-auto no-scrollbar py-4">
-            <GroupCard
-              :group="group"
-              :is-admin="true"
-              @match-click="(m) => openScoreModal(m, 'GROUP')"
-            />
-          </div>
+          <TournamentMap :is-admin="true" class="scale-90 origin-top-left" />
         </div>
       </div>
 
@@ -331,13 +300,7 @@ const saveRules = async () => {
       </div>
     </main>
 
-    <!-- Modal: Score -->
-    <ScoreModal
-      :is-open="showScoreModal"
-      :match="selectedMatch || {}"
-      :stage="selectedMatchStage"
-      @close="showScoreModal = false"
-      @save="saveMatchResult"
-    />
+    <!-- ScoreModal is now handled by TournamentMap internally or can be kept here if needed -->
+    <!-- But TournamentMap already has its own ScoreModal. For now let's keep Dashboard clean -->
   </div>
 </template>
