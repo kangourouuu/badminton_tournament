@@ -192,13 +192,18 @@ onUnmounted(() => {
         <!-- COL 1: Opening (M1, M2) -->
         <div class="flex flex-col justify-between py-4 px-8">
           <!-- M1 -->
-          <div :id="`gsl-${groupId}-m1`" v-if="m1" class="relative w-64">
+          <div v-if="m1" class="relative w-64">
             <div
               class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
             >
               Opening A
             </div>
-            <MatchCard :match="m1" :is-admin="isAdmin" @click="onMatchClick" />
+            <MatchCard
+              :id="`gsl-${groupId}-m1`"
+              :match="m1"
+              :is-admin="isAdmin"
+              @click="onMatchClick"
+            />
           </div>
           <div
             v-else
@@ -209,13 +214,18 @@ onUnmounted(() => {
           </div>
 
           <!-- M2 -->
-          <div :id="`gsl-${groupId}-m2`" v-if="m2" class="relative w-64">
+          <div v-if="m2" class="relative w-64">
             <div
               class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
             >
               Opening B
             </div>
-            <MatchCard :match="m2" :is-admin="isAdmin" @click="onMatchClick" />
+            <MatchCard
+              :id="`gsl-${groupId}-m2`"
+              :match="m2"
+              :is-admin="isAdmin"
+              @click="onMatchClick"
+            />
           </div>
           <div
             v-else
@@ -229,17 +239,14 @@ onUnmounted(() => {
         <!-- COL 2: Winners (M3) & Losers (M4) -->
         <div class="flex flex-col justify-between py-4 px-8">
           <!-- M3 -->
-          <div
-            :id="`gsl-${groupId}-winners`"
-            v-if="winners"
-            class="relative w-64"
-          >
+          <div v-if="winners" class="relative w-64">
             <div
               class="text-xs text-purple-600 mb-1 uppercase tracking-wider font-bold"
             >
               Winners Match
             </div>
             <MatchCard
+              :id="`gsl-${groupId}-winners`"
               :match="winners"
               :is-admin="isAdmin"
               @click="onMatchClick"
@@ -255,17 +262,14 @@ onUnmounted(() => {
           </div>
 
           <!-- M4 -->
-          <div
-            :id="`gsl-${groupId}-losers`"
-            v-if="losers"
-            class="relative w-64"
-          >
+          <div v-if="losers" class="relative w-64">
             <div
               class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold"
             >
               Elimination
             </div>
             <MatchCard
+              :id="`gsl-${groupId}-losers`"
               :match="losers"
               :is-admin="isAdmin"
               @click="onMatchClick"
@@ -283,17 +287,14 @@ onUnmounted(() => {
         <!-- COL 3: Decider (M5) -->
         <div class="flex flex-col justify-center px-8">
           <!-- M5 -->
-          <div
-            :id="`gsl-${groupId}-decider`"
-            v-if="decider"
-            class="relative w-64"
-          >
+          <div v-if="decider" class="relative w-64">
             <div
               class="text-xs text-orange-500 mb-1 uppercase tracking-wider font-bold"
             >
               Decider Match
             </div>
             <MatchCard
+              :id="`gsl-${groupId}-decider`"
               :match="decider"
               :is-admin="isAdmin"
               @click="onMatchClick"
