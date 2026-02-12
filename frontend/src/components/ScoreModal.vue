@@ -22,17 +22,20 @@ const sets = ref([
   { a: null, b: null },
 ]);
 
-// simple scoring condition
-const isSimpleScoring = computed(() => {
-  if (props.stage !== "GROUP") return false;
-  const label = props.match?.label || "";
-  return label === "M1" || label === "M2";
-});
+// simple scoring condition (Only Opening Match or Winners/Decider in Group Stage)
+const isGroupStage = computed(() => props.stage === "GROUP");
+
+// Score inputs for Group Stage (Simplified)
+const groupScoreA = ref("");
+const groupScoreB = ref("");
 
 // Auto-calculate score string (e.g. "2-1")
 const calculatedScore = computed(() => {
-  if (isSimpleScoring.value) {
-    return winnerId.value ? "1-0" : "";
+  if (isGroupStage.value) {
+    if (!groupScoreA.value || !groupScoreB.value) return "";
+    return parseInt(groupScoreA.value) > parseInt(groupScoreB.value)
+      ? "1-0"
+      : "0-1";
   }
   let aWins = 0;
   let bWins = 0;
@@ -48,6 +51,16 @@ const calculatedScore = computed(() => {
   return `${aWins}-${bWins}`;
 });
 
+// Auto-detect winner for Group Stage
+watch([groupScoreA, groupScoreB], () => {
+  if (isGroupStage.value && groupScoreA.value && groupScoreB.value) {
+    const sA = parseInt(groupScoreA.value);
+    const sB = parseInt(groupScoreB.value);
+    if (sA > sB) winnerId.value = props.match.team_a?.id;
+    else if (sB > sA) winnerId.value = props.match.team_b?.id;
+  }
+});
+
 // Sync data when match changes
 watch(
   () => props.match,
@@ -56,23 +69,22 @@ watch(
       winnerId.value = newMatch.winner_id || "";
       videoUrl.value = newMatch.video_url || "";
 
+      // Reset Group scores
+      groupScoreA.value = "";
+      groupScoreB.value = "";
+
+      // Parse score if exists (e.g. "1-0")
+      if (newMatch.score && isGroupStage.value) {
+        // Just reset inputs to clean slate for new entry
+      }
+
       // Parse detailed sets if available
       if (newMatch.sets_detail && newMatch.sets_detail.sets) {
-        // Map back to our structure
         const loadedSets = newMatch.sets_detail.sets;
         sets.value = [
           { a: loadedSets[0]?.a ?? null, b: loadedSets[0]?.b ?? null },
           { a: loadedSets[1]?.a ?? null, b: loadedSets[1]?.b ?? null },
           { a: loadedSets[2]?.a ?? null, b: loadedSets[2]?.b ?? null },
-        ];
-      } else if (newMatch.score) {
-        // Legacy/Simple score support could go here, but let's reset to clean slate
-        // or try to parse if format was "21-19, 15-21"
-        // For now, reset to empty to encourage re-entry
-        sets.value = [
-          { a: null, b: null },
-          { a: null, b: null },
-          { a: null, b: null },
         ];
       } else {
         sets.value = [
@@ -87,17 +99,15 @@ watch(
 );
 
 const save = () => {
-  // Construct sets_detail payload
   let validSets = [];
-  let score = calculatedScore.value || "0-0";
+  let score = calculatedScore.value || "";
 
-  if (isSimpleScoring.value) {
-    // For Group stage, we enforce a simple "1-0" structure invisibly if needed,
-    // or just send empty sets. Backend should handle simplified score string.
-    // We can mock a single set 1-0 for consistency?
-    // Master plan says just "immediately sets score='1-0'".
-    score = "1-0";
-    validSets = []; // No detailed sets for simplified group mode
+  if (isGroupStage.value) {
+    // Backend strictly expects some notation, but Masterplan says always '1-0' effectively
+    if (!winnerId.value)
+      return alert("Please enter scores to determine winner");
+    score = calculatedScore.value;
+    validSets = [];
   } else {
     validSets = sets.value
       .map((s, i) => ({
@@ -161,83 +171,52 @@ const save = () => {
           </div>
         </div>
 
-        <!-- FEATURE A: SIMPLIFIED GROUP SCORING (Only M1/M2) -->
-        <div v-if="isSimpleScoring">
-          <label
-            class="block text-xs font-bold text-slate-400 uppercase mb-4 text-center"
+        <!-- FEATURE A: SIMPLIFIED GROUP SCORING (Winner detection) -->
+        <div v-if="isGroupStage" class="space-y-6">
+          <div
+            class="flex justify-center items-center gap-8 px-4 py-8 bg-slate-50 rounded-xl border border-slate-100"
           >
-            Select Winner (Opening Match)
-          </label>
-          <div class="grid grid-cols-2 gap-4">
-            <button
-              v-if="match.team_a"
-              class="p-6 border-2 rounded-lg font-outfit font-bold text-lg transition-all flex flex-col items-center gap-2 group relative overflow-hidden"
-              :class="
-                winnerId === match.team_a.id
-                  ? 'border-violet-600 bg-purple-50 text-violet-900 shadow-md ring-2 ring-violet-200'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-              "
-              @click="winnerId = match.team_a.id"
-            >
-              <span class="text-2xl transition-transform group-hover:scale-110"
-                >🏆</span
+            <div class="flex flex-col items-center gap-3">
+              <input
+                v-model="groupScoreA"
+                type="number"
+                placeholder="21"
+                class="w-24 h-24 bg-white border-4 border-slate-200 rounded-2xl text-center text-4xl font-black text-slate-800 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition-all shadow-sm"
+              />
+              <span class="text-[10px] font-bold text-slate-400 uppercase">{{
+                match.team_a?.name
+              }}</span>
+              <span
+                v-if="winnerId === match.team_a?.id"
+                class="text-xs font-black text-violet-600 bg-violet-100 px-2 py-0.5 rounded animate-bounce"
+                >WINNER</span
               >
-              <span>{{ match.team_a.name }}</span>
-              <div
-                v-if="winnerId === match.team_a.id"
-                class="absolute top-2 right-2 text-violet-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </div>
-            </button>
+            </div>
 
-            <button
-              v-if="match.team_b"
-              class="p-6 border-2 rounded-lg font-outfit font-bold text-lg transition-all flex flex-col items-center gap-2 group relative overflow-hidden"
-              :class="
-                winnerId === match.team_b.id
-                  ? 'border-violet-600 bg-purple-50 text-violet-900 shadow-md ring-2 ring-violet-200'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-              "
-              @click="winnerId = match.team_b.id"
-            >
-              <span class="text-2xl transition-transform group-hover:scale-110"
-                >🏆</span
+            <div class="text-2xl font-black text-slate-300">VS</div>
+
+            <div class="flex flex-col items-center gap-3">
+              <input
+                v-model="groupScoreB"
+                type="number"
+                placeholder="19"
+                class="w-24 h-24 bg-white border-4 border-slate-200 rounded-2xl text-center text-4xl font-black text-slate-800 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition-all shadow-sm"
+              />
+              <span class="text-[10px] font-bold text-slate-400 uppercase">{{
+                match.team_b?.name
+              }}</span>
+              <span
+                v-if="winnerId === match.team_b?.id"
+                class="text-xs font-black text-violet-600 bg-violet-100 px-2 py-0.5 rounded animate-bounce"
+                >WINNER</span
               >
-              <span>{{ match.team_b.name }}</span>
-              <div
-                v-if="winnerId === match.team_b.id"
-                class="absolute top-2 right-2 text-violet-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </div>
-            </button>
+            </div>
           </div>
-          <p class="text-center text-xs text-gray-400 mt-4 italic">
-            Group match outcomes are effectively "Win/Loss". Detailed scores are
-            optional for internal records but simplified here for speed.
+
+          <p
+            class="text-center text-[10px] text-slate-400 uppercase tracking-widest font-bold"
+          >
+            System will automatically detect winner based on score
           </p>
         </div>
 

@@ -2,8 +2,8 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
-import GSLGrid from "../components/GSLGrid.vue";
-import KnockoutGrid from "../components/KnockoutGrid.vue";
+import GroupCard from "../components/GroupCard.vue";
+import MatchCard from "../components/MatchCard.vue";
 import ScoreModal from "../components/ScoreModal.vue";
 import ParticipantsManager from "../components/ParticipantsManager.vue";
 import SeedingManager from "../components/SeedingManager.vue";
@@ -262,17 +262,25 @@ const saveRules = async () => {
           <h3 class="text-xl font-bold text-gray-800">{{ group.name }}</h3>
 
           <div
-            class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 overflow-hidden"
+            v-if="group.name === 'KNOCKOUT'"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            <KnockoutGrid
-              v-if="group.type === 'KNOCKOUT'"
-              :matches="group.matches || []"
-              :is-admin="true"
-              @match-click="(m) => openScoreModal(m, 'KNOCKOUT')"
-            />
-            <GSLGrid
-              v-else
-              :matches="group.matches || []"
+            <div v-for="m in group.matches" :key="m.id" class="space-y-1">
+              <div
+                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+              >
+                {{ m.label }}
+              </div>
+              <MatchCard
+                :match="m"
+                :is-admin="true"
+                @click="openScoreModal(m, 'KNOCKOUT')"
+              />
+            </div>
+          </div>
+          <div v-else class="overflow-x-auto no-scrollbar py-4">
+            <GroupCard
+              :group="group"
               :is-admin="true"
               @match-click="(m) => openScoreModal(m, 'GROUP')"
             />
