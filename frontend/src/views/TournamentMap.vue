@@ -10,10 +10,6 @@ const props = defineProps({
   isAdmin: { type: Boolean, default: false },
 });
 
-const props = defineProps({
-  isAdmin: { type: Boolean, default: false },
-});
-
 const groups = ref([]);
 const loading = ref(true);
 const zoom = ref(0.7);
