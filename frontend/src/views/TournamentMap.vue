@@ -28,17 +28,37 @@ const knockoutMatches = computed(() => {
   return kg ? kg.matches : [];
 });
 
-const sf1 = computed(() =>
-  knockoutMatches.value.find((m) => m.label === "SF1"),
+const sf1 = computed(
+  () =>
+    knockoutMatches.value.find((m) => m.label === "SF1") || {
+      id: "ghost-sf1",
+      label: "SF1",
+      isGhost: true,
+    },
 );
-const sf2 = computed(() =>
-  knockoutMatches.value.find((m) => m.label === "SF2"),
+const sf2 = computed(
+  () =>
+    knockoutMatches.value.find((m) => m.label === "SF2") || {
+      id: "ghost-sf2",
+      label: "SF2",
+      isGhost: true,
+    },
 );
-const final = computed(() =>
-  knockoutMatches.value.find((m) => m.label === "Final"),
+const final = computed(
+  () =>
+    knockoutMatches.value.find((m) => m.label === "Final") || {
+      id: "ghost-final",
+      label: "Final",
+      isGhost: true,
+    },
 );
-const bronze = computed(() =>
-  knockoutMatches.value.find((m) => m.label === "Bronze"),
+const bronze = computed(
+  () =>
+    knockoutMatches.value.find((m) => m.label === "Bronze") || {
+      id: "ghost-bronze",
+      label: "Bronze",
+      isGhost: true,
+    },
 );
 
 const fetchData = async () => {
@@ -61,7 +81,16 @@ const containerRef = ref(null);
 
 const getElementPoint = (id, side = "center") => {
   const el = document.getElementById(id);
-  if (!el || !containerRef.value) return null;
+  // Fallback for ghosts or missing nodes to avoid crash
+  if (!el || !containerRef.value) {
+    if (id.includes("ghost")) {
+      // If ghost element IS in DOM (rendered), correct. If not, return null.
+      // Since we render ghosts, it should be found.
+      // If not found, ignore.
+      return null;
+    }
+    return null;
+  }
   const rect = el.getBoundingClientRect();
   const cRect = containerRef.value.getBoundingClientRect();
 
@@ -361,10 +390,10 @@ onUnmounted(() => window.removeEventListener("resize", updateGlobalPaths));
                 Semi Final 1
               </div>
               <MatchNode
-                v-if="sf1"
                 :match="sf1"
-                @click="handleMatchClick"
+                @click="!sf1.isGhost && handleMatchClick($event)"
                 class="scale-110"
+                :class="{ 'opacity-75': sf1.isGhost }"
               />
             </div>
 
@@ -376,10 +405,10 @@ onUnmounted(() => window.removeEventListener("resize", updateGlobalPaths));
                 Grand Final
               </div>
               <MatchNode
-                v-if="final"
                 :match="final"
-                @click="handleMatchClick"
+                @click="!final.isGhost && handleMatchClick($event)"
                 class="scale-[1.6] shadow-2xl border-violet-100"
+                :class="{ 'opacity-75': final.isGhost }"
               />
             </div>
 
@@ -391,10 +420,10 @@ onUnmounted(() => window.removeEventListener("resize", updateGlobalPaths));
                 Semi Final 2
               </div>
               <MatchNode
-                v-if="sf2"
                 :match="sf2"
-                @click="handleMatchClick"
+                @click="!sf2.isGhost && handleMatchClick($event)"
                 class="scale-110"
+                :class="{ 'opacity-75': sf2.isGhost }"
               />
             </div>
 
@@ -406,10 +435,10 @@ onUnmounted(() => window.removeEventListener("resize", updateGlobalPaths));
                 Bronze Match
               </div>
               <MatchNode
-                v-if="bronze"
                 :match="bronze"
-                @click="handleMatchClick"
+                @click="!bronze.isGhost && handleMatchClick($event)"
                 class="scale-90"
+                :class="{ 'opacity-75': bronze.isGhost }"
               />
             </div>
           </div>
