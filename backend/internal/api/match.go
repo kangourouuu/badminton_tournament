@@ -65,21 +65,20 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 		}
 
 		// Propagate Winner
-		if match.NextMatchWinID != uuid.Nil {
+		// Propagate Winner
+		// PRIORITIZE Group Stage Promotion (Winners/Decider) to enforce Cross-Over Logic
+		// This must run BEFORE NextMatchWinID check to prevent legacy pointers from hijacking the route
+		if match.Label == "Winners" { // M3 winner is Rank 1
+			log.Printf("[Auto-Propagation] Promoting Group Rank 1 (Winner %s) to Knockout", req.WinnerID)
+			h.promoteToKnockout(ctx, match.GroupID, 1, req.WinnerID)
+		} else if match.Label == "Decider" { // M5 winner is Rank 2
+			log.Printf("[Auto-Propagation] Promoting Group Rank 2 (Decider Winner %s) to Knockout", req.WinnerID)
+			h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID)
+		} else if match.NextMatchWinID != uuid.Nil {
 			log.Printf("[Auto-Propagation] Propagating WINNER %s to Match %s (Source: %s)", req.WinnerID, match.NextMatchWinID, match.Label)
 			h.propagateToMatch(ctx, match.NextMatchWinID, req.WinnerID, match.Label, "win")
 		} else {
-			// Check for qualification if no NextMatchWinID (M3 or M5)
-			if match.Label == "Winners" { // M3 winner is Rank 1
-				log.Printf("[Auto-Propagation] Promoting Group Rank 1 (Winner %s) to Knockout", req.WinnerID)
-				h.promoteToKnockout(ctx, match.GroupID, 1, req.WinnerID)
-			} else if match.Label == "Decider" { // M5 winner is Rank 2
-				log.Printf("[Auto-Propagation] Promoting Group Rank 2 (Winner %s) to Knockout", req.WinnerID)
-				h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID)
-			}
-            // Add explicit fallback for Final promotion if NextMatchWinID is missing but label implies it
-            // Assuming DB migration set IDs correctly, but if not we might need lookup. 
-            // For now, trusting DB IDs for SF->Final.
+             // Fallback for others
 		}
 
 		// Propagate Loser
