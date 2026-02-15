@@ -4,6 +4,7 @@ import { ref, watch, computed } from "vue";
 const props = defineProps({
   isOpen: Boolean,
   match: Object,
+  stage: { type: String, default: "KNOCKOUT" }, // 'GROUP' or 'KNOCKOUT'
   isAdmin: {
     type: Boolean,
     default: false,
@@ -17,11 +18,7 @@ const videoUrl = ref("");
 
 // Stage detection
 const isGroupStage = computed(() => {
-  // Heuristic: check group name or match label.
-  // Better use match metadata if available.
-  // Assume if label is M1-M5 or Winners/Losers/Decider it's GROUP.
-  const label = props.match?.label || "";
-  return ["M1", "M2", "Winners", "Losers", "Decider"].includes(label);
+  return props.stage === "GROUP";
 });
 
 // Detailed Sets: [ {a: null, b: null}, ... ] - Used for Knockout (BO3)
@@ -70,13 +67,43 @@ watch(
         else winnerId.value = ""; // Tie
       }
     } else {
-      // For Knockout, winner determined by sets won
-      const [a, b] = (calculatedSummaryScore.value || "0-0")
-        .split("-")
-        .map(Number);
-      if (a > b) winnerId.value = props.match.team_a_id;
-      else if (b > a) winnerId.value = props.match.team_b_id;
-      else winnerId.value = ""; // Tie or incomplete
+      // BO3 Logic: Who reached 2 sets first?
+      let teamASetsWon = 0;
+      let teamBSetsWon = 0;
+
+      const s1 = knockoutSets.value[0];
+      const s2 = knockoutSets.value[1];
+      const s3 = knockoutSets.value[2];
+
+      // Set 1
+      if (s1.a !== null && s1.b !== null) {
+        if (parseInt(s1.a) > parseInt(s1.b)) teamASetsWon++;
+        else if (parseInt(s1.b) > parseInt(s1.a)) teamBSetsWon++;
+      }
+
+      // Set 2
+      if (s2.a !== null && s2.b !== null) {
+        if (parseInt(s2.a) > parseInt(s2.b)) teamASetsWon++;
+        else if (parseInt(s2.b) > parseInt(s2.a)) teamBSetsWon++;
+      }
+
+      // Set 3 (Only count if scores are entered)
+      if (
+        s3.a !== null &&
+        s3.b !== null &&
+        (parseInt(s3.a) > 0 || parseInt(s3.b) > 0)
+      ) {
+        if (parseInt(s3.a) > parseInt(s3.b)) teamASetsWon++;
+        else if (parseInt(s3.b) > parseInt(s3.a)) teamBSetsWon++;
+      }
+
+      if (teamASetsWon === 2) {
+        winnerId.value = props.match.team_a_id;
+      } else if (teamBSetsWon === 2) {
+        winnerId.value = props.match.team_b_id;
+      } else {
+        winnerId.value = ""; // Incomplete or tie
+      }
     }
   },
   { deep: true },
@@ -126,18 +153,21 @@ const isValid = computed(() => {
     // Knockout: Must have winner (2 sets won)
     if (!winnerId.value) return false;
 
-    // Validate individual sets (no ties)
-    for (const s of knockoutSets.value) {
-      if (s.a !== null && s.b !== null && parseInt(s.a) === parseInt(s.b))
-        return false;
-    }
+    // Validate set 1 and 2 must be complete
+    const s1 = knockoutSets.value[0];
+    const s2 = knockoutSets.value[1];
+    if (s1.a === null || s1.b === null || s2.a === null || s2.b === null)
+      return false;
+    if (parseInt(s1.a) === parseInt(s1.b) || parseInt(s2.a) === parseInt(s2.b))
+      return false; // No individual ties
+
     return true;
   }
 });
 
 const save = () => {
   if (!isValid.value)
-    return alert("Invalid score. Ensure no ties and inputs are complete.");
+    return alert("Invalid score. Ensure winner is determined (2 sets won).");
 
   let finalSets = [];
   if (isGroupStage.value) {
