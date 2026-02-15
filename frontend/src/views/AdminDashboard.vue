@@ -169,6 +169,24 @@ const saveRules = async () => {
     savingRules.value = false;
   }
 };
+
+const sortMatches = (matches) => {
+  if (!matches) return [];
+  const order = {
+    M1: 1,
+    M2: 2,
+    Winners: 3,
+    Losers: 4,
+    Decider: 5, // GSL
+    SF1: 6,
+    SF2: 7,
+    Bronze: 8,
+    Final: 9, // Knockout
+  };
+  return [...matches].sort(
+    (a, b) => (order[a.label] || 99) - (order[b.label] || 99),
+  );
+};
 </script>
 
 <template>
@@ -250,7 +268,7 @@ const saveRules = async () => {
         </div>
 
         <!-- Vertical Control Grid -->
-        <div class="flex flex-col gap-8">
+        <div class="flex flex-col gap-12">
           <div
             v-for="group in groups"
             :key="group.id"
@@ -258,7 +276,7 @@ const saveRules = async () => {
           >
             <!-- Group Header -->
             <div
-              class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center"
+              class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center"
             >
               <span
                 class="text-xs font-black text-gray-400 uppercase tracking-widest"
@@ -267,23 +285,25 @@ const saveRules = async () => {
               <h3 class="text-lg font-bold text-gray-900">{{ group.name }}</h3>
             </div>
 
-            <!-- Matches List -->
+            <!-- Matches List -- Sorted Chronologically -->
+            <!-- GSL Order: M1, M2, Winners (M3), Losers (M4), Decider (M5) -->
+            <!-- Knockout Order: SF1, SF2, Bronze, Final -->
             <div class="divide-y divide-gray-50">
               <div
-                v-for="match in group.matches"
+                v-for="match in sortMatches(group.matches)"
                 :key="match.id"
                 class="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                 :class="{ 'opacity-50': match.winner_id }"
               >
                 <!-- Match Info -->
                 <div class="flex items-center gap-6 w-1/3">
-                  <div class="w-16 text-center">
+                  <div class="w-20 text-center">
                     <span
-                      class="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded uppercase tracking-wider"
+                      class="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded-sm uppercase tracking-wider block w-full"
                       >{{ match.label }}</span
                     >
                   </div>
-                  <div class="flex flex-col">
+                  <div class="flex flex-col gap-1">
                     <div
                       class="text-sm font-bold text-gray-900 flex items-center gap-2"
                     >
@@ -295,12 +315,16 @@ const saveRules = async () => {
                         >{{ match.team_a?.name || "TBD" }}</span
                       >
                       <span
-                        v-if="match.winner_id === match.team_a_id"
-                        class="text-[8px] bg-violet-600 text-white px-1 rounded uppercase"
+                        v-if="
+                          match.winner_id && match.winner_id === match.team_a_id
+                        "
+                        class="text-[8px] bg-violet-600 text-white px-1.5 py-0.5 rounded uppercase tracking-wider"
                         >Win</span
                       >
                     </div>
-                    <div class="text-[10px] text-gray-400 font-bold uppercase">
+                    <div
+                      class="text-[9px] text-gray-300 font-black uppercase tracking-widest pl-1"
+                    >
                       vs
                     </div>
                     <div
@@ -314,8 +338,10 @@ const saveRules = async () => {
                         >{{ match.team_b?.name || "TBD" }}</span
                       >
                       <span
-                        v-if="match.winner_id === match.team_b_id"
-                        class="text-[8px] bg-violet-600 text-white px-1 rounded uppercase"
+                        v-if="
+                          match.winner_id && match.winner_id === match.team_b_id
+                        "
+                        class="text-[8px] bg-violet-600 text-white px-1.5 py-0.5 rounded uppercase tracking-wider"
                         >Win</span
                       >
                     </div>
@@ -326,28 +352,30 @@ const saveRules = async () => {
                 <div class="flex-1 text-center">
                   <div
                     v-if="match.score"
-                    class="text-lg font-black text-gray-900 tracking-tight"
+                    class="text-xl font-black text-gray-900 tracking-tight"
                   >
                     {{ match.score }}
                   </div>
-                  <div v-else class="text-xs text-gray-400 italic">
-                    No score
+                  <div v-else class="text-xs text-gray-400 italic font-medium">
+                    Not Started
                   </div>
+
                   <div
                     v-if="match.sets_detail?.sets"
-                    class="text-[10px] text-gray-400 mt-1"
+                    class="flex justify-center gap-3 mt-2"
                   >
                     <span
                       v-for="(s, i) in match.sets_detail.sets"
                       :key="i"
-                      class="mr-2"
-                      >S{{ s.set }}: {{ s.a }}-{{ s.b }}</span
+                      class="text-[10px] text-gray-500 bg-gray-100 px-1.5 rounded"
                     >
+                      {{ s.a }}-{{ s.b }}
+                    </span>
                   </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="w-24 text-right">
+                <div class="w-32 text-right">
                   <button
                     @click="
                       openScoreModal(
@@ -355,9 +383,9 @@ const saveRules = async () => {
                         group.name === 'KNOCKOUT' ? 'KNOCKOUT' : 'GROUP',
                       )
                     "
-                    class="btn-primary text-[10px] px-4 py-2 uppercase tracking-widest"
+                    class="btn-primary text-[10px] px-5 py-2.5 uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-sm"
                   >
-                    Edit
+                    Update
                   </button>
                 </div>
               </div>
