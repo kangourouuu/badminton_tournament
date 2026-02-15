@@ -32,12 +32,13 @@ const fetchMatchDetails = async (id) => {
 };
 
 watch(
-  () => props.match,
-  (newMatch) => {
-    if (newMatch && newMatch.id && !newMatch.isGhost) {
+  [() => props.match, () => props.isOpen],
+  ([newMatch, newIsOpen]) => {
+    // Force fetch if modal is open and we have a valid match ID
+    // We check !matchData.value || id mismatch to ensure we don't spam API if data is already loaded for this match
+    if (newIsOpen && newMatch && newMatch.id && !newMatch.isGhost) {
+      console.log("[MatchDetails] Fetching details for match ID:", newMatch.id);
       fetchMatchDetails(newMatch.id);
-    } else {
-      matchData.value = null;
     }
   },
   { immediate: true },
