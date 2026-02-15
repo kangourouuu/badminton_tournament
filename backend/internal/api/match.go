@@ -201,6 +201,7 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 	for _, m := range koGroup.Matches {
 		log.Printf("DEBUG: Available Match in KO Group: ID=%s Label=%s", m.ID, m.Label)
 	}
+	log.Printf("DEBUG: Found Knockout Group %v with %d matches", koGroup.ID, len(koGroup.Matches))
 
 	var targetLabel string
 	var targetCol string
