@@ -4,6 +4,7 @@ import api from "../services/api";
 import MatchNode from "../components/MatchNode.vue";
 import TheNavbar from "../components/TheNavbar.vue";
 import ScoreModal from "../components/ScoreModal.vue";
+import MatchDetailsModal from "../components/MatchDetailsModal.vue";
 
 const props = defineProps({
   isAdmin: { type: Boolean, default: false },
@@ -51,6 +52,9 @@ const fetchData = async () => {
   }
 };
 
+const isMatchDetailsOpen = ref(false);
+const selectedMatchDetails = ref(null);
+
 // SVG Logic
 const paths = ref([]);
 const containerRef = ref(null);
@@ -72,9 +76,17 @@ const getElementPoint = (id, side = "center") => {
 };
 
 const drawGlobalPath = (p1, p2, color = "#e2e8f0") => {
-  const midX = p1.x + (p2.x - p1.x) * 0.5;
+  // Cubic Bezier Curve
+  // M startX startY C cp1X cp1Y, cp2X cp2Y, endX endY
+  // cp1 = startX + 50, startY
+  // cp2 = endX - 50, endY
+  const cp1X = p1.x + 50;
+  const cp1Y = p1.y;
+  const cp2X = p2.x - 50;
+  const cp2Y = p2.y;
+
   return {
-    d: `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`,
+    d: `M ${p1.x} ${p1.y} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${p2.x} ${p2.y}`,
     color: color,
   };
 };
@@ -182,9 +194,10 @@ const handleMatchClick = (match) => {
   if (props.isAdmin) {
     selectedMatch.value = match;
     isModalOpen.value = true;
-  } else if (match.video_url) {
-    navigator.clipboard.writeText(match.video_url);
-    alert("Match recording URL copied to clipboard!");
+  } else {
+    // Open read-only modal
+    selectedMatchDetails.value = match;
+    isMatchDetailsOpen.value = true;
   }
 };
 
@@ -474,6 +487,12 @@ onUnmounted(() => window.removeEventListener("resize", updateGlobalPaths));
       :is-admin="true"
       @close="isModalOpen = false"
       @save="saveMatch"
+    />
+
+    <MatchDetailsModal
+      :is-open="isMatchDetailsOpen"
+      :match="selectedMatchDetails"
+      @close="isMatchDetailsOpen = false"
     />
   </div>
 </template>
