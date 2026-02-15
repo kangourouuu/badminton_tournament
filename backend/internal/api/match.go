@@ -145,7 +145,7 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 	}
 
 	if col != "" {
-		log.Printf("[Auto-Propagation] Updating Match %s (%s): Setting %s = %s", target.Label, target.ID, col, teamID)
+		log.Printf("PROMOTION SUCCESS: Pushed Player %v to Match ID %v", teamID, target.ID)
 		_, err := h.DB.NewUpdate().Model(&target).Set(col+" = ?", teamID).WherePK().Exec(ctx)
 		return err
 	}
@@ -191,11 +191,11 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 
 	for _, m := range koGroup.Matches {
 		if m.Label == targetLabel {
-			log.Printf("[Auto-Propagation] Updating Knockout Match %s (ID: %s): Setting %s = %s", targetLabel, m.ID, targetCol, teamID)
+			log.Printf("PROMOTION SUCCESS: Pushed Player %v to Match ID %v", teamID, m.ID)
 			_, err := h.DB.NewUpdate().Model(m).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
 			return err
 		}
 	}
-	log.Printf("[Auto-Propagation] WARNING: Target match %s not found in Knockout group", targetLabel)
+	log.Printf("PROMOTION ERROR: Target Match %s not found for progression", targetLabel)
 	return nil
 }
