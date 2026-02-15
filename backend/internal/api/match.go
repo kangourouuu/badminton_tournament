@@ -187,8 +187,7 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 		}
 	}
 
-	for i := range koGroup.Matches {
-		m := &koGroup.Matches[i]
+	for _, m := range koGroup.Matches {
 		if m.Label == targetLabel {
 			log.Printf("[Auto-Propagation] Updating Knockout Match %s (ID: %s): Setting %s = %s", targetLabel, m.ID, targetCol, teamID)
 			_, err := h.DB.NewUpdate().Model(m).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
