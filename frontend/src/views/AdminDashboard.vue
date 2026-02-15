@@ -441,6 +441,7 @@ const sortMatches = (matches) => {
     <ScoreModal
       :is-open="showScoreModal"
       :match="selectedMatch"
+      :stage="selectedMatchStage"
       :is-admin="true"
       @close="showScoreModal = false"
       @save="saveMatchResult"
