@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ type UpdateMatchRequest struct {
 	Score      string                 `json:"score"`
 	SetsDetail map[string]interface{} `json:"sets_detail"`
 	VideoURL   string                 `json:"video_url"`
+	Status     string                 `json:"status"` // "finished" or empty
 }
 
 func (h *Handler) UpdateMatch(c *gin.Context) {
@@ -21,6 +23,12 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 	var req UpdateMatchRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validation: If status is finished, winner must be set
+	if req.Status == "finished" && req.WinnerID == uuid.Nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "WinnerID is required when status is finished"})
 		return
 	}
 
@@ -58,12 +66,15 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 
 		// Propagate Winner
 		if match.NextMatchWinID != uuid.Nil {
+			log.Printf("[Auto-Propagation] Propagating WINNER %s to Match %s (Source: %s)", req.WinnerID, match.NextMatchWinID, match.Label)
 			h.propagateToMatch(ctx, match.NextMatchWinID, req.WinnerID, match.Label, "win")
 		} else {
 			// Check for qualification if no NextMatchWinID (M3 or M5)
 			if match.Label == "Winners" { // M3 winner is Rank 1
+				log.Printf("[Auto-Propagation] Promoting Group Rank 1 (Winner %s) to Knockout", req.WinnerID)
 				h.promoteToKnockout(ctx, match.GroupID, 1, req.WinnerID)
 			} else if match.Label == "Decider" { // M5 winner is Rank 2
+				log.Printf("[Auto-Propagation] Promoting Group Rank 2 (Winner %s) to Knockout", req.WinnerID)
 				h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID)
 			} else if match.Label == "Final" || match.Label == "Bronze" {
 				// Champion decided, potentially update tournament status or just stay finished
@@ -72,6 +83,7 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 
 		// Propagate Loser
 		if match.NextMatchLoseID != uuid.Nil && loserID != uuid.Nil {
+			log.Printf("[Auto-Propagation] Propagating LOSER %s to Match %s (Source: %s)", loserID, match.NextMatchLoseID, match.Label)
 			h.propagateToMatch(ctx, match.NextMatchLoseID, loserID, match.Label, "lose")
 		}
 	}
@@ -131,6 +143,7 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 	}
 
 	if col != "" {
+		log.Printf("[Auto-Propagation] Updating Match %s (%s): Setting %s = %s", target.Label, target.ID, col, teamID)
 		_, err := h.DB.NewUpdate().Model(&target).Set(col+" = ?", teamID).WherePK().Exec(ctx)
 		return err
 	}
@@ -176,6 +189,7 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 
 	for _, m := range koGroup.Matches {
 		if m.Label == targetLabel {
+			log.Printf("[Auto-Propagation] Updating Knockout Match %s: Setting %s = %s", targetLabel, targetCol, teamID)
 			_, err := h.DB.NewUpdate().Model(m).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
 			return err
 		}

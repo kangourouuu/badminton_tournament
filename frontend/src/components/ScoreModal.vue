@@ -67,6 +67,7 @@ watch(
           winnerId.value = props.match.team_a_id;
         else if (parseInt(groupSet.value.b) > parseInt(groupSet.value.a))
           winnerId.value = props.match.team_b_id;
+        else winnerId.value = ""; // Tie
       }
     } else {
       // For Knockout, winner determined by sets won
@@ -75,6 +76,7 @@ watch(
         .map(Number);
       if (a > b) winnerId.value = props.match.team_a_id;
       else if (b > a) winnerId.value = props.match.team_b_id;
+      else winnerId.value = ""; // Tie or incomplete
     }
   },
   { deep: true },
@@ -115,19 +117,39 @@ watch(
   { immediate: true },
 );
 
+const isValid = computed(() => {
+  if (isGroupStage.value) {
+    if (groupSet.value.a === null || groupSet.value.b === null) return false;
+    if (parseInt(groupSet.value.a) === parseInt(groupSet.value.b)) return false; // No ties in 1 set
+    return true;
+  } else {
+    // Knockout: Must have winner (2 sets won)
+    if (!winnerId.value) return false;
+
+    // Validate individual sets (no ties)
+    for (const s of knockoutSets.value) {
+      if (s.a !== null && s.b !== null && parseInt(s.a) === parseInt(s.b))
+        return false;
+    }
+    return true;
+  }
+});
+
 const save = () => {
+  if (!isValid.value)
+    return alert("Invalid score. Ensure no ties and inputs are complete.");
+
   let finalSets = [];
   if (isGroupStage.value) {
-    if (groupSet.value.a === null || groupSet.value.b === null)
-      return alert("Enter score");
     finalSets = [
       { set: 1, a: parseInt(groupSet.value.a), b: parseInt(groupSet.value.b) },
     ];
   } else {
     finalSets = knockoutSets.value
       .map((s, i) => ({ set: i + 1, a: parseInt(s.a), b: parseInt(s.b) }))
-      .filter((s) => !isNaN(s.a) && !isNaN(s.b));
-    if (finalSets.length === 0) return alert("Enter sets");
+      .filter(
+        (s) => s.a !== null && s.b !== null && !isNaN(s.a) && !isNaN(s.b),
+      );
   }
 
   emit("save", {
@@ -136,6 +158,7 @@ const save = () => {
     score: calculatedSummaryScore.value,
     sets_detail: { sets: finalSets },
     video_url: videoUrl.value,
+    status: "finished",
   });
 };
 </script>
@@ -262,7 +285,8 @@ const save = () => {
       <div v-if="isAdmin" class="p-6 bg-gray-50 flex justify-end gap-3">
         <button
           @click="save"
-          class="btn-primary w-full max-w-[140px] uppercase tracking-widest text-[10px] font-black"
+          :disabled="!isValid"
+          class="btn-primary w-full max-w-[140px] uppercase tracking-widest text-[10px] font-black disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Save Score
         </button>
