@@ -24,6 +24,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	api.GET("/participants", h.ListParticipants)
 	api.GET("/teams", h.ListTeams)
 	api.GET("/groups", h.ListGroups)
+	api.GET("/matches/:id", h.GetMatch)
 	api.GET("/public/rules", h.GetRules)
 
 	// Admin

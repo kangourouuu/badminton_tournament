@@ -18,6 +18,28 @@ type UpdateMatchRequest struct {
 	Status     string                 `json:"status"` // "finished" or empty
 }
 
+func (h *Handler) GetMatch(c *gin.Context) {
+	id := c.Param("id")
+	ctx := c.Request.Context()
+
+	var match models.Match
+	// Fetch match with related teams to ensure names are available
+	err := h.DB.NewSelect().
+		Model(&match).
+		Relation("TeamA").
+		Relation("TeamB").
+		Where("id = ?", id).
+		Scan(ctx)
+		
+	if err != nil {
+		log.Printf("Error fetching match %s: %v", id, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Match not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, match)
+}
+
 func (h *Handler) UpdateMatch(c *gin.Context) {
 	id := c.Param("id")
 	var req UpdateMatchRequest
@@ -161,15 +183,24 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 		log.Printf("PROMOTION ERROR: Source Group %v not found: %v", groupID, err)
 		return err
 	}
+	log.Printf("DEBUG: Promotion Source Group: Name='%s', Pool='%s'", group.Name, group.Pool)
 
 	var koGroup models.Group
 	// Use lower() or case-insensitive search if driver supports, or just strict "KNOCKOUT"
 	// Trying simple strict first but logging error
+	// Try strict "KNOCKOUT" first
 	if err := h.DB.NewSelect().Model(&koGroup).Where("name = ?", "KNOCKOUT").Relation("Matches").Scan(ctx); err != nil {
-		log.Printf("PROMOTION ERROR: 'KNOCKOUT' Group not found: %v", err)
-		return nil
+		// Fallback to case-insensitive or "Knockout Stage"
+		// Using generic ILIKE if postgres, or just try "Knockout"
+		if err2 := h.DB.NewSelect().Model(&koGroup).Where("name ILIKE ?", "knockout%").Relation("Matches").Scan(ctx); err2 != nil {
+			log.Printf("PROMOTION ERROR: 'KNOCKOUT' Group not found (strict or loose): %v / %v", err, err2)
+			return nil
+		}
 	}
 	log.Printf("DEBUG: Found Knockout Group %v with %d matches", koGroup.ID, len(koGroup.Matches))
+	for _, m := range koGroup.Matches {
+		log.Printf("DEBUG: Available Match in KO Group: ID=%s Label=%s", m.ID, m.Label)
+	}
 
 	var targetLabel string
 	var targetCol string
@@ -200,21 +231,34 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 	// 1. Search in Loaded Relation
 	for _, m := range koGroup.Matches {
 		if m.Label == targetLabel {
-			log.Printf("PROMOTION SUCCESS: Pushed Player %v to Match ID %v", teamID, m.ID)
-			_, err := h.DB.NewUpdate().Model(m).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
-			return err
+			log.Printf("DEBUG: Found Target Match %s (ID: %s) in relation", targetLabel, m.ID)
+			res, err := h.DB.NewUpdate().Model(m).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
+			if err != nil {
+				log.Printf("PROMOTION ERROR: DB Update failed: %v", err)
+				return err
+			}
+			rows, _ := res.RowsAffected()
+			log.Printf("PROMOTION SUCCESS: Updated %s with Team %s. Rows Affected: %d", targetLabel, teamID, rows)
+			return nil
 		}
 	}
 
 	// 2. Fallback: Direct Query (if koGroup.Matches relation was empty/incomplete)
 	log.Printf("PROMOTION WARNING: Target %s not found in relation, trying direct query", targetLabel)
 	var targetMatch models.Match
+	// Note: Explicitly selecting ID to ensure we have a valid PK for update
 	if err := h.DB.NewSelect().Model(&targetMatch).Where("group_id = ? AND label = ?", koGroup.ID, targetLabel).Scan(ctx); err == nil {
-		log.Printf("PROMOTION SUCCESS (FALLBACK): Pushed Player %v to Match ID %v", teamID, targetMatch.ID)
-		_, err := h.DB.NewUpdate().Model(&targetMatch).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
-		return err
+		log.Printf("DEBUG: Found Target Match %s (ID: %s) via direct query", targetLabel, targetMatch.ID)
+		res, err := h.DB.NewUpdate().Model(&targetMatch).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
+		if err != nil {
+			log.Printf("PROMOTION ERROR: DB Update failed (fallback): %v", err)
+			return err
+		}
+		rows, _ := res.RowsAffected()
+		log.Printf("PROMOTION SUCCESS (FALLBACK): Updated %s with Team %s. Rows Affected: %d", targetLabel, teamID, rows)
+		return nil
 	}
 	
-	log.Printf("PROMOTION ERROR: Target Match %s not found for progression", targetLabel)
+	log.Printf("PROMOTION ERROR: Target Match %s not found in DB for progression", targetLabel)
 	return nil
 }
