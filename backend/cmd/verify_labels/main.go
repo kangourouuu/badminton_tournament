@@ -21,7 +21,21 @@ func main() {
 
 	ctx := context.Background()
 
-	// 1. Find Knockout Group
+	// 1. List ALL Groups
+	var groups []models.Group
+	if err := db.DB.NewSelect().Model(&groups).Order("name ASC").Scan(ctx); err != nil {
+		log.Fatalf("Error fetching groups: %v", err)
+	}
+
+	fmt.Printf("\n=== DATABASE GROUPS LIST ===\n")
+	fmt.Printf("%-36s | %-20s | %-10s\n", "Group ID", "Name", "Pool")
+	fmt.Println("-----------------------------------------------------------------------")
+	for _, g := range groups {
+		fmt.Printf("%s | %-20s | %-10s\n", g.ID, g.Name, g.Pool)
+	}
+	fmt.Println("-----------------------------------------------------------------------")
+
+	// 2. Find Knockout Group (Specific Check)
 	var koGroup models.Group
 	err := db.DB.NewSelect().
 		Model(&koGroup).
@@ -30,10 +44,12 @@ func main() {
 		Scan(ctx)
 
 	if err != nil {
-		log.Fatalf("Error finding Knockout group: %v", err)
+		fmt.Printf("\n❌ CRITICAL: No 'KNOCKOUT' Group found! (Error: %v)\n", err)
+		fmt.Println("You must generate the Knockout Stage (Semi-Finals) before promotion can work.")
+		return
 	}
 
-	fmt.Printf("\n=== VERIFICATION RESULT ===\n")
+	fmt.Printf("\n=== KNOCKOUT GROUP DETAILS ===\n")
 	fmt.Printf("Found Group: '%s' (ID: %s)\n", koGroup.Name, koGroup.ID)
 	fmt.Printf("Number of Matches: %d\n", len(koGroup.Matches))
 	fmt.Println("---------------------------------------------------")
