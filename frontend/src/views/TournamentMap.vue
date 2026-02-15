@@ -25,7 +25,7 @@ const labGroups = computed(() =>
 
 const knockoutMatches = computed(() => {
   const kg = groups.value.find((g) => g.name === "KNOCKOUT");
-  return kg ? kg.matches : [];
+  return kg && kg.matches ? kg.matches : [];
 });
 
 const sf1 = computed(
@@ -74,6 +74,8 @@ const fetchData = async () => {
 
 const isMatchDetailsOpen = ref(false);
 const selectedMatchDetails = ref(null);
+
+const getMatch = (matches, label) => matches?.find((m) => m.label === label);
 
 const handleMatchClick = (match) => {
   if (props.isAdmin) {
@@ -168,34 +170,34 @@ onMounted(() => {
               <!-- Round 1 -->
               <div class="flex flex-col justify-between py-4">
                 <MatchNode
-                  v-if="g.matches[0]"
-                  :match="g.matches.find((m) => m.label === 'M1')"
+                  v-if="getMatch(g.matches, 'M1')"
+                  :match="getMatch(g.matches, 'M1')"
                   @click="handleMatchClick"
                 />
                 <MatchNode
-                  v-if="g.matches[1]"
-                  :match="g.matches.find((m) => m.label === 'M2')"
+                  v-if="getMatch(g.matches, 'M2')"
+                  :match="getMatch(g.matches, 'M2')"
                   @click="handleMatchClick"
                 />
               </div>
               <!-- Round 2 -->
               <div class="flex flex-col justify-between py-4">
                 <MatchNode
-                  v-if="g.matches[2]"
-                  :match="g.matches.find((m) => m.label === 'Winners')"
+                  v-if="getMatch(g.matches, 'Winners')"
+                  :match="getMatch(g.matches, 'Winners')"
                   @click="handleMatchClick"
                 />
                 <MatchNode
-                  v-if="g.matches[3]"
-                  :match="g.matches.find((m) => m.label === 'Losers')"
+                  v-if="getMatch(g.matches, 'Losers')"
+                  :match="getMatch(g.matches, 'Losers')"
                   @click="handleMatchClick"
                 />
               </div>
               <!-- Decider -->
               <div class="flex flex-col justify-center">
                 <MatchNode
-                  v-if="g.matches[4]"
-                  :match="g.matches.find((m) => m.label === 'Decider')"
+                  v-if="getMatch(g.matches, 'Decider')"
+                  :match="getMatch(g.matches, 'Decider')"
                   @click="handleMatchClick"
                 />
               </div>
@@ -205,9 +207,9 @@ onMounted(() => {
 
         <!-- Column: Champions (Center) -->
         <div
-          class="flex flex-col items-center justify-center gap-40 z-10 pt-20"
+          class="flex flex-col items-center justify-center gap-8 z-10 pt-20 w-full"
         >
-          <div class="text-center mb-20">
+          <div class="text-center mb-10">
             <h1
               class="text-6xl font-black text-gray-900 tracking-tighter italic uppercase"
             >
@@ -216,9 +218,9 @@ onMounted(() => {
             <div class="h-1 w-20 bg-violet-600 mx-auto mt-4"></div>
           </div>
 
-          <div class="flex flex-col items-center gap-24">
+          <div class="flex flex-col items-center gap-12 w-full">
             <!-- SF1 -->
-            <div class="space-y-4">
+            <div class="flex flex-col items-center gap-2">
               <div
                 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.5em] text-center"
               >
@@ -233,7 +235,7 @@ onMounted(() => {
             </div>
 
             <!-- Final -->
-            <div class="space-y-6 pt-10">
+            <div class="flex flex-col items-center gap-4">
               <div
                 class="text-xs font-black text-violet-600 uppercase tracking-[1em] text-center"
               >
@@ -248,7 +250,7 @@ onMounted(() => {
             </div>
 
             <!-- SF2 -->
-            <div class="space-y-4 pt-10">
+            <div class="flex flex-col items-center gap-2">
               <div
                 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.5em] text-center"
               >
@@ -263,7 +265,7 @@ onMounted(() => {
             </div>
 
             <!-- Bronze -->
-            <div class="mt-20 opacity-50 space-y-2">
+            <div class="mt-8 opacity-50 flex flex-col items-center gap-2">
               <div
                 class="text-[8px] font-black text-gray-400 uppercase tracking-widest text-center"
               >
@@ -308,34 +310,34 @@ onMounted(() => {
               <!-- Round 1 -->
               <div class="flex flex-col justify-between py-4">
                 <MatchNode
-                  v-if="g.matches[0]"
-                  :match="g.matches.find((m) => m.label === 'M1')"
+                  v-if="getMatch(g.matches, 'M1')"
+                  :match="getMatch(g.matches, 'M1')"
                   @click="handleMatchClick"
                 />
                 <MatchNode
-                  v-if="g.matches[1]"
-                  :match="g.matches.find((m) => m.label === 'M2')"
+                  v-if="getMatch(g.matches, 'M2')"
+                  :match="getMatch(g.matches, 'M2')"
                   @click="handleMatchClick"
                 />
               </div>
               <!-- Round 2 -->
               <div class="flex flex-col justify-between py-4">
                 <MatchNode
-                  v-if="g.matches[2]"
-                  :match="g.matches.find((m) => m.label === 'Winners')"
+                  v-if="getMatch(g.matches, 'Winners')"
+                  :match="getMatch(g.matches, 'Winners')"
                   @click="handleMatchClick"
                 />
                 <MatchNode
-                  v-if="g.matches[3]"
-                  :match="g.matches.find((m) => m.label === 'Losers')"
+                  v-if="getMatch(g.matches, 'Losers')"
+                  :match="getMatch(g.matches, 'Losers')"
                   @click="handleMatchClick"
                 />
               </div>
               <!-- Decider -->
               <div class="flex flex-col justify-center">
                 <MatchNode
-                  v-if="g.matches[4]"
-                  :match="g.matches.find((m) => m.label === 'Decider')"
+                  v-if="getMatch(g.matches, 'Decider')"
+                  :match="getMatch(g.matches, 'Decider')"
                   @click="handleMatchClick"
                 />
               </div>
