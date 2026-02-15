@@ -75,150 +75,6 @@ const fetchData = async () => {
 const isMatchDetailsOpen = ref(false);
 const selectedMatchDetails = ref(null);
 
-// SVG Logic
-const paths = ref([]);
-const containerRef = ref(null);
-
-const getElementPoint = (id, side = "center") => {
-  const el = document.getElementById(id);
-  // Fallback for ghosts or missing nodes to avoid crash
-  if (!el || !containerRef.value) {
-    if (id.includes("ghost")) {
-      // If ghost element IS in DOM (rendered), correct. If not, return null.
-      // Since we render ghosts, it should be found.
-      // If not found, ignore.
-      return null;
-    }
-    return null;
-  }
-  const rect = el.getBoundingClientRect();
-  const cRect = containerRef.value.getBoundingClientRect();
-
-  const x =
-    side === "right"
-      ? rect.right - cRect.left
-      : side === "left"
-        ? rect.left - cRect.left
-        : rect.left - cRect.left + rect.width / 2;
-  const y = rect.top - cRect.top + rect.height / 2;
-  return { x, y };
-};
-
-const drawGlobalPath = (p1, p2, color = "#e2e8f0") => {
-  // Cubic Bezier Curve
-  // M startX startY C cp1X cp1Y, cp2X cp2Y, endX endY
-  // cp1 = startX + 50, startY
-  // cp2 = endX - 50, endY
-  const cp1X = p1.x + 50;
-  const cp1Y = p1.y;
-  const cp2X = p2.x - 50;
-  const cp2Y = p2.y;
-
-  return {
-    d: `M ${p1.x} ${p1.y} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${p2.x} ${p2.y}`,
-    color: color,
-  };
-};
-
-const updateGlobalPaths = async () => {
-  await nextTick();
-  const newPaths = [];
-
-  // Group Connectors
-  groups.value.forEach((g) => {
-    if (g.name === "KNOCKOUT") return;
-
-    // Layout-aware sides
-    const isPoolA = g.pool === "Mesoneer";
-    const outSide = isPoolA ? "right" : "left";
-    const inSide = isPoolA ? "left" : "right";
-
-    // Internal GSL connections
-    const m1 = g.matches.find((m) => m.label === "M1");
-    const m2 = g.matches.find((m) => m.label === "M2");
-    const winners = g.matches.find((m) => m.label === "Winners");
-    const losers = g.matches.find((m) => m.label === "Losers");
-    const decider = g.matches.find((m) => m.label === "Decider");
-
-    if (m1 && winners)
-      newPaths.push(
-        drawGlobalPath(
-          getElementPoint(`match-${m1.id}`, outSide),
-          getElementPoint(`match-${winners.id}`, inSide),
-        ),
-      );
-    if (m1 && losers)
-      newPaths.push(
-        drawGlobalPath(
-          getElementPoint(`match-${m1.id}`, outSide),
-          getElementPoint(`match-${losers.id}`, inSide),
-        ),
-      );
-    if (m2 && winners)
-      newPaths.push(
-        drawGlobalPath(
-          getElementPoint(`match-${m2.id}`, outSide),
-          getElementPoint(`match-${winners.id}`, inSide),
-        ),
-      );
-    if (m2 && losers)
-      newPaths.push(
-        drawGlobalPath(
-          getElementPoint(`match-${m2.id}`, outSide),
-          getElementPoint(`match-${losers.id}`, inSide),
-        ),
-      );
-    if (winners && decider)
-      newPaths.push(
-        drawGlobalPath(
-          getElementPoint(`match-${winners.id}`, outSide),
-          getElementPoint(`match-${decider.id}`, inSide),
-        ),
-      );
-    if (losers && decider)
-      newPaths.push(
-        drawGlobalPath(
-          getElementPoint(`match-${losers.id}`, outSide),
-          getElementPoint(`match-${decider.id}`, inSide),
-        ),
-      );
-
-    // Promotion paths to SF
-    if (winners) {
-      const pW = getElementPoint(`match-${winners.id}`, outSide);
-      const targetSF = isPoolA ? sf1.value : sf2.value;
-      const pSF = getElementPoint(`match-${targetSF?.id}`, inSide);
-      if (pW && pSF) newPaths.push(drawGlobalPath(pW, pSF, "#8b5cf6"));
-    }
-    if (decider) {
-      const pD = getElementPoint(`match-${decider.id}`, outSide);
-      const targetSF = isPoolA ? sf2.value : sf1.value;
-      const pSF = getElementPoint(`match-${targetSF?.id}`, inSide);
-      if (pD && pSF) newPaths.push(drawGlobalPath(pD, pSF, "#8b5cf6"));
-    }
-  });
-
-  // SF -> Final
-  if (sf1.value && final.value)
-    newPaths.push(
-      drawGlobalPath(
-        getElementPoint(`match-${sf1.value.id}`, "right"),
-        getElementPoint(`match-${final.value.id}`, "left"),
-        "#8b5cf6",
-      ),
-    );
-  if (sf2.value && final.value)
-    newPaths.push(
-      drawGlobalPath(
-        getElementPoint(`match-${sf2.value.id}`, "right"),
-        getElementPoint(`match-${final.value.id}`, "left"),
-        "#8b5cf6",
-      ),
-    );
-
-  paths.value = newPaths;
-};
-
 const handleMatchClick = (match) => {
   if (props.isAdmin) {
     selectedMatch.value = match;
@@ -240,13 +96,9 @@ const saveMatch = async (data) => {
   }
 };
 
-watch(groups, updateGlobalPaths, { deep: true });
 onMounted(() => {
   fetchData();
-  window.addEventListener("resize", updateGlobalPaths);
-  setTimeout(updateGlobalPaths, 500);
 });
-onUnmounted(() => window.removeEventListener("resize", updateGlobalPaths));
 </script>
 
 <template>
@@ -286,24 +138,7 @@ onUnmounted(() => window.removeEventListener("resize", updateGlobalPaths));
         Initializing Tournament Grid
       </div>
 
-      <div
-        v-else
-        ref="containerRef"
-        class="relative flex justify-between gap-40 min-w-[2000px]"
-      >
-        <!-- SVG Layer -->
-        <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
-          <path
-            v-for="(p, i) in paths"
-            :key="i"
-            :d="p.d"
-            :stroke="p.color"
-            stroke-width="1.5"
-            fill="none"
-            class="transition-all duration-500"
-          />
-        </svg>
-
+      <div v-else class="relative flex justify-between gap-40 min-w-[2000px]">
         <!-- Column: Session A -->
         <div class="flex flex-col gap-32 z-10">
           <div class="space-y-2 mb-10 pl-2">
