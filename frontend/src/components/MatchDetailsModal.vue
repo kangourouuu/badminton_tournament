@@ -1,48 +1,49 @@
 <script setup>
-import { computed, watch, ref } from "vue";
+import { ref, watch, computed } from "vue";
 import api from "../services/api";
 
 const props = defineProps({
   isOpen: Boolean,
-  match: Object, // Can be partial, used for ID
+  match: Object,
 });
 
 const emit = defineEmits(["close"]);
 
-const matchData = ref(null);
 const loading = ref(false);
+const matchData = ref(null);
+const error = ref(null);
 
-const fetchData = async () => {
-  if (!props.match?.id) return;
+const fetchMatchDetails = async (id) => {
+  if (!id || String(id).startsWith("ghost-")) return;
+
   loading.value = true;
+  error.value = null;
+  matchData.value = null;
+
   try {
-    // GET /matches/:id
-    const res = await api.get(`/matches/${props.match.id}`);
-    matchData.value = res.data;
+    const response = await api.get(`/matches/${id}`);
+    matchData.value = response.data;
   } catch (err) {
-    console.error("Failed to fetch match details", err);
+    console.error("Error fetching match details:", err);
+    error.value = "Failed to load match details";
   } finally {
     loading.value = false;
   }
 };
 
 watch(
-  () => props.isOpen,
-  (newVal) => {
-    if (newVal) {
-      matchData.value = null; // Reset
-      fetchData();
+  () => props.match,
+  (newMatch) => {
+    if (newMatch && newMatch.id && !newMatch.isGhost) {
+      fetchMatchDetails(newMatch.id);
+    } else {
+      matchData.value = null;
     }
   },
+  { immediate: true },
 );
 
-// Helper to parse sets detail string or object
 const sets = computed(() => {
-  if (!matchData.value) return [];
-  const details = matchData.value.sets_detail;
-  if (!details) return [];
-
-  // If it's the JSONB object from DB: { sets: [...] }
   if (typeof details === "object" && details.sets) {
     return details.sets;
   }
