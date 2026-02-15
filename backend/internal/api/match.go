@@ -157,6 +157,7 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 		return err
 	}
 
+	var koGroup models.Group
 	if err := h.DB.NewSelect().Model(&koGroup).Where("name = ?", "KNOCKOUT").Relation("Matches").Scan(ctx); err != nil {
 		log.Printf("PROMOTION ERROR: 'KNOCKOUT' Group not found. Cannot promote team %v", teamID)
 		return nil
