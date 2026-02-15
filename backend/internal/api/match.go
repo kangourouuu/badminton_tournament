@@ -189,10 +189,11 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 
 	for _, m := range koGroup.Matches {
 		if m.Label == targetLabel {
-			log.Printf("[Auto-Propagation] Updating Knockout Match %s: Setting %s = %s", targetLabel, targetCol, teamID)
+			log.Printf("[Auto-Propagation] Updating Knockout Match %s (ID: %s): Setting %s = %s", targetLabel, m.ID, targetCol, teamID)
 			_, err := h.DB.NewUpdate().Model(m).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
 			return err
 		}
 	}
+	log.Printf("[Auto-Propagation] WARNING: Target match %s not found in Knockout group", targetLabel)
 	return nil
 }
