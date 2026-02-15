@@ -73,7 +73,9 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 			h.promoteToKnockout(ctx, match.GroupID, 1, req.WinnerID)
 		} else if match.Label == "Decider" { // M5 winner is Rank 2
 			log.Printf("[Auto-Propagation] Promoting Group Rank 2 (Decider Winner %s) to Knockout", req.WinnerID)
-			h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID)
+			if err := h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID); err != nil {
+				log.Printf("[Auto-Propagation] ERROR promoting decider: %v", err)
+			}
 		} else if match.NextMatchWinID != uuid.Nil {
 			log.Printf("[Auto-Propagation] Propagating WINNER %s to Match %s (Source: %s)", req.WinnerID, match.NextMatchWinID, match.Label)
 			h.propagateToMatch(ctx, match.NextMatchWinID, req.WinnerID, match.Label, "win")
@@ -152,16 +154,22 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 }
 
 func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank int, teamID uuid.UUID) error {
+	log.Printf("DEBUG: promoteToKnockout called for Group %v, Rank %d, Team %v", groupID, rank, teamID)
+
 	var group models.Group
 	if err := h.DB.NewSelect().Model(&group).Where("id = ?", groupID).Scan(ctx); err != nil {
+		log.Printf("PROMOTION ERROR: Source Group %v not found: %v", groupID, err)
 		return err
 	}
 
 	var koGroup models.Group
+	// Use lower() or case-insensitive search if driver supports, or just strict "KNOCKOUT"
+	// Trying simple strict first but logging error
 	if err := h.DB.NewSelect().Model(&koGroup).Where("name = ?", "KNOCKOUT").Relation("Matches").Scan(ctx); err != nil {
-		log.Printf("PROMOTION ERROR: 'KNOCKOUT' Group not found. Cannot promote team %v", teamID)
+		log.Printf("PROMOTION ERROR: 'KNOCKOUT' Group not found: %v", err)
 		return nil
 	}
+	log.Printf("DEBUG: Found Knockout Group %v with %d matches", koGroup.ID, len(koGroup.Matches))
 
 	var targetLabel string
 	var targetCol string

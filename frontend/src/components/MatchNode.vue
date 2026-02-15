@@ -8,6 +8,8 @@ const props = defineProps({
   },
 });
 
+defineEmits(["click"]);
+
 const isFinished = computed(() => props.match.winner_id);
 
 const teamAClass = computed(() => {
@@ -29,6 +31,7 @@ const teamBClass = computed(() => {
   <div
     class="w-64 bg-white border border-gray-100 rounded-[4px] p-4 cursor-pointer hover:border-violet-200 transition-all active:scale-95 group font-outfit"
     :id="'match-' + match.id"
+    @click="$emit('click', match)"
   >
     <!-- Teams -->
     <div class="space-y-3">
