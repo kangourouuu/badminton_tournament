@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"badminton_tournament/backend/internal/db"
 	"badminton_tournament/backend/internal/models"
