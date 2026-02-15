@@ -2,7 +2,6 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
-import TournamentMap from "./TournamentMap.vue";
 import ScoreModal from "../components/ScoreModal.vue";
 import ParticipantsManager from "../components/ParticipantsManager.vue";
 import SeedingManager from "../components/SeedingManager.vue";
@@ -247,13 +246,123 @@ const saveRules = async () => {
       <!-- Tab: BRACKETS -->
       <div v-show="activeTab === 'brackets'" class="space-y-8">
         <div class="flex justify-between items-center">
-          <h2 class="text-lg font-bold text-gray-800">Active Groups</h2>
+          <h2 class="text-lg font-bold text-gray-800">Match Management</h2>
         </div>
 
-        <div
-          class="bg-white rounded-[4px] border border-gray-100 p-0 overflow-hidden h-[800px] relative"
-        >
-          <TournamentMap :is-admin="true" class="scale-90 origin-top-left" />
+        <!-- Vertical Control Grid -->
+        <div class="flex flex-col gap-8">
+          <div
+            v-for="group in groups"
+            :key="group.id"
+            class="bg-white rounded-lg border border-gray-100 overflow-hidden"
+          >
+            <!-- Group Header -->
+            <div
+              class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center"
+            >
+              <span
+                class="text-xs font-black text-gray-400 uppercase tracking-widest"
+                >{{ group.pool }} POOL</span
+              >
+              <h3 class="text-lg font-bold text-gray-900">{{ group.name }}</h3>
+            </div>
+
+            <!-- Matches List -->
+            <div class="divide-y divide-gray-50">
+              <div
+                v-for="match in group.matches"
+                :key="match.id"
+                class="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                :class="{ 'opacity-50': match.winner_id }"
+              >
+                <!-- Match Info -->
+                <div class="flex items-center gap-6 w-1/3">
+                  <div class="w-16 text-center">
+                    <span
+                      class="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded uppercase tracking-wider"
+                      >{{ match.label }}</span
+                    >
+                  </div>
+                  <div class="flex flex-col">
+                    <div
+                      class="text-sm font-bold text-gray-900 flex items-center gap-2"
+                    >
+                      <span
+                        :class="{
+                          'text-violet-700':
+                            match.winner_id === match.team_a_id,
+                        }"
+                        >{{ match.team_a?.name || "TBD" }}</span
+                      >
+                      <span
+                        v-if="match.winner_id === match.team_a_id"
+                        class="text-[8px] bg-violet-600 text-white px-1 rounded uppercase"
+                        >Win</span
+                      >
+                    </div>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">
+                      vs
+                    </div>
+                    <div
+                      class="text-sm font-bold text-gray-900 flex items-center gap-2"
+                    >
+                      <span
+                        :class="{
+                          'text-violet-700':
+                            match.winner_id === match.team_b_id,
+                        }"
+                        >{{ match.team_b?.name || "TBD" }}</span
+                      >
+                      <span
+                        v-if="match.winner_id === match.team_b_id"
+                        class="text-[8px] bg-violet-600 text-white px-1 rounded uppercase"
+                        >Win</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Score Display -->
+                <div class="flex-1 text-center">
+                  <div
+                    v-if="match.score"
+                    class="text-lg font-black text-gray-900 tracking-tight"
+                  >
+                    {{ match.score }}
+                  </div>
+                  <div v-else class="text-xs text-gray-400 italic">
+                    No score
+                  </div>
+                  <div
+                    v-if="match.sets_detail?.sets"
+                    class="text-[10px] text-gray-400 mt-1"
+                  >
+                    <span
+                      v-for="(s, i) in match.sets_detail.sets"
+                      :key="i"
+                      class="mr-2"
+                      >S{{ s.set }}: {{ s.a }}-{{ s.b }}</span
+                    >
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="w-24 text-right">
+                  <button
+                    @click="
+                      openScoreModal(
+                        match,
+                        group.name === 'KNOCKOUT' ? 'KNOCKOUT' : 'GROUP',
+                      )
+                    "
+                    class="btn-primary text-[10px] px-4 py-2 uppercase tracking-widest"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -300,7 +409,13 @@ const saveRules = async () => {
       </div>
     </main>
 
-    <!-- ScoreModal is now handled by TournamentMap internally or can be kept here if needed -->
-    <!-- But TournamentMap already has its own ScoreModal. For now let's keep Dashboard clean -->
+    <!-- ScoreModal -->
+    <ScoreModal
+      :is-open="showScoreModal"
+      :match="selectedMatch"
+      :is-admin="true"
+      @close="showScoreModal = false"
+      @save="saveMatchResult"
+    />
   </div>
 </template>
