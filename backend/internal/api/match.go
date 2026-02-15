@@ -159,7 +159,8 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 
 	var koGroup models.Group
 	if err := h.DB.NewSelect().Model(&koGroup).Where("name = ?", "KNOCKOUT").Relation("Matches").Scan(ctx); err != nil {
-		return nil // Knockout bracket not yet created
+		log.Printf("PROMOTION ERROR: 'KNOCKOUT' Group not found. Cannot promote team %v", teamID)
+		return nil
 	}
 
 	var targetLabel string
@@ -188,6 +189,7 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 		}
 	}
 
+	// 1. Search in Loaded Relation
 	for _, m := range koGroup.Matches {
 		if m.Label == targetLabel {
 			log.Printf("PROMOTION SUCCESS: Pushed Player %v to Match ID %v", teamID, m.ID)
@@ -195,6 +197,16 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 			return err
 		}
 	}
+
+	// 2. Fallback: Direct Query (if koGroup.Matches relation was empty/incomplete)
+	log.Printf("PROMOTION WARNING: Target %s not found in relation, trying direct query", targetLabel)
+	var targetMatch models.Match
+	if err := h.DB.NewSelect().Model(&targetMatch).Where("group_id = ? AND label = ?", koGroup.ID, targetLabel).Scan(ctx); err == nil {
+		log.Printf("PROMOTION SUCCESS (FALLBACK): Pushed Player %v to Match ID %v", teamID, targetMatch.ID)
+		_, err := h.DB.NewUpdate().Model(&targetMatch).Set(targetCol+" = ?", teamID).WherePK().Exec(ctx)
+		return err
+	}
+	
 	log.Printf("PROMOTION ERROR: Target Match %s not found for progression", targetLabel)
 	return nil
 }

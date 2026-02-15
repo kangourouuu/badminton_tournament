@@ -356,6 +356,7 @@ onMounted(() => {
     />
 
     <MatchDetailsModal
+      v-if="isMatchDetailsOpen && selectedMatchDetails"
       :is-open="isMatchDetailsOpen"
       :match="selectedMatchDetails"
       @close="isMatchDetailsOpen = false"
