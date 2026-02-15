@@ -76,14 +76,16 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 			} else if match.Label == "Decider" { // M5 winner is Rank 2
 				log.Printf("[Auto-Propagation] Promoting Group Rank 2 (Winner %s) to Knockout", req.WinnerID)
 				h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID)
-			} else if match.Label == "Final" || match.Label == "Bronze" {
-				// Champion decided, potentially update tournament status or just stay finished
 			}
+            // Add explicit fallback for Final promotion if NextMatchWinID is missing but label implies it
+            // Assuming DB migration set IDs correctly, but if not we might need lookup. 
+            // For now, trusting DB IDs for SF->Final.
 		}
 
 		// Propagate Loser
 		if match.NextMatchLoseID != uuid.Nil && loserID != uuid.Nil {
 			log.Printf("[Auto-Propagation] Propagating LOSER %s to Match %s (Source: %s)", loserID, match.NextMatchLoseID, match.Label)
+			// Ensure "lose" outcome is passed for Bronze logic
 			h.propagateToMatch(ctx, match.NextMatchLoseID, loserID, match.Label, "lose")
 		}
 	}
