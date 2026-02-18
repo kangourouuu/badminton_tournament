@@ -100,6 +100,24 @@ const openScoreModal = (match, stage = "KNOCKOUT") => {
   showScoreModal.value = true;
 };
 
+const generateKnockout = async () => {
+  if (
+    !confirm(
+      "Generate Knockout Stage (Semi-Finals)? This will create the 'KNOCKOUT' group if it doesn't exist.",
+    )
+  )
+    return;
+  try {
+    await api.post("/tournaments/knockout", {
+      tournament_id: "00000000-0000-0000-0000-000000000000",
+    });
+    alert("Knockout Stage Generated!");
+    fetchData();
+  } catch (err) {
+    alert("Error: " + (err.response?.data?.error || err.message));
+  }
+};
+
 const saveMatchResult = async (data) => {
   try {
     await api.post(`/matches/${data.id}`, {
@@ -265,6 +283,14 @@ const sortMatches = (matches) => {
       <div v-show="activeTab === 'brackets'" class="space-y-8">
         <div class="flex justify-between items-center">
           <h2 class="text-lg font-bold text-gray-800">Match Management</h2>
+          <div class="flex gap-2">
+            <button
+              @click="generateKnockout"
+              class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700 uppercase tracking-widest shadow-sm"
+            >
+              Generate Knockout
+            </button>
+          </div>
         </div>
 
         <!-- Vertical Control Grid -->
