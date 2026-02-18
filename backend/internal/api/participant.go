@@ -24,23 +24,17 @@ func (h *Handler) HandleFormWebhook(c *gin.Context) {
 		return
 	}
 
-	// Auto-generate pseudo-email since it's removed from form but required by DB
-	// Format: name_sanitized@placeholder.badminton
-	// This relies on Name being unique enough, or we accept overwrite if Name is identical.
-	sanitized := models.SanitizeNameForEmail(req.Name)
-	pseudoEmail := sanitized + "@placeholder.badminton"
-
+	// Auto-generate pseudo-email removed. Usage Name as unique key.
+	
 	participant := &models.Participant{
-		Email:          pseudoEmail,
 		Name:           req.Name,
 		Pool:           req.Group, // Google Form "group" -> DB "pool"
 		PartnerRequest: req.PartnerRequest,
 	}
 
-	// Upsert: On conflict email (which is driven by name now), update info
+	// Upsert: On conflict name, update pool/partner_request
 	_, err := h.DB.NewInsert().Model(participant).
-		On("CONFLICT (email) DO UPDATE").
-		Set("name = EXCLUDED.name").
+		On("CONFLICT (name) DO UPDATE").
 		Set("pool = EXCLUDED.pool").
 		Set("partner_request = EXCLUDED.partner_request").
 		Exec(c.Request.Context())

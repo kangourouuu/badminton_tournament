@@ -20,8 +20,7 @@ type Participant struct {
 	bun.BaseModel `bun:"table:participants,alias:p"`
 
 	ID        uuid.UUID `bun:"id,pk,type:uuid,default:gen_random_uuid()" json:"id"`
-	Email     string    `bun:"email,unique,notnull" json:"email"`
-	Name      string    `bun:"name,notnull" json:"name"`
+	Name      string    `bun:"name,unique,notnull" json:"name"` // Name is now the unique key
 	Pool      string    `bun:"pool,notnull" json:"pool"` // 'Mesoneer', 'Lab'
 	PartnerRequest string `bun:"partner_request" json:"partner_request"` // Desired Teammate
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
