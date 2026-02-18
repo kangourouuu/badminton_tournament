@@ -185,16 +185,21 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 	}
 	log.Printf("DEBUG: Promotion Source Group: Name='%s', Pool='%s'", group.Name, group.Pool)
 
+	// 2. Find Knockout Group (or Auto-Generate)
 	var koGroup models.Group
-	// Use lower() or case-insensitive search if driver supports, or just strict "KNOCKOUT"
-	// Trying simple strict first but logging error
-	// Try strict "KNOCKOUT" first
 	if err := h.DB.NewSelect().Model(&koGroup).Where("name = ?", "KNOCKOUT").Relation("Matches").Scan(ctx); err != nil {
-		// Fallback to case-insensitive or "Knockout Stage"
-		// Using generic ILIKE if postgres, or just try "Knockout"
+		// Try looser search
 		if err2 := h.DB.NewSelect().Model(&koGroup).Where("name ILIKE ?", "knockout%").Relation("Matches").Scan(ctx); err2 != nil {
-			log.Printf("PROMOTION ERROR: 'KNOCKOUT' Group not found (strict or loose): %v / %v", err, err2)
-			return nil
+			log.Printf("PROMOTION NOTICE: Knockout Stage not found. Attempting Auto-Generation...")
+			
+			// Auto-Generate
+			newKoGroup, errGen := h.EnsureKnockoutStage(ctx, group.TournamentID)
+			if errGen != nil {
+				log.Printf("PROMOTION ERROR: Failed to auto-generate Knockout Stage: %v", errGen)
+				return errGen 
+			}
+			koGroup = *newKoGroup
+			log.Printf("PROMOTION SUCCESS: Auto-Generated Knockout Stage (ID: %s)", koGroup.ID)
 		}
 	}
 	log.Printf("DEBUG: Found Knockout Group %v with %d matches", koGroup.ID, len(koGroup.Matches))
