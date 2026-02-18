@@ -20,20 +20,33 @@ const poolTeams = computed(() => {
 
 // -- ACTIONS --
 const randomizeAndCreate = async () => {
-  if (selectedTeamIds.value.length !== 4) return;
+  console.log(
+    "randomizeAndCreate called. Selected:",
+    selectedTeamIds.value.length,
+  );
+  if (selectedTeamIds.value.length !== 4) {
+    console.warn("Selection count is not 4");
+    return;
+  }
+
   if (
     !confirm(
       `Confirm create group for ${selectedPool.value}? This will shuffle the 4 selected teams and generate matches.`,
     )
-  )
+  ) {
+    console.log("User cancelled confirmation");
     return;
+  }
 
   isProcessing.value = true;
   try {
-    // Determine group name (e.g. "Group X") - For now let's just use a prompt or auto-gen
     const name = prompt("Enter Group Name (e.g. 'Group A'):", "Group A");
-    if (!name) return;
+    if (!name) {
+      console.log("User cancelled name prompt");
+      return;
+    }
 
+    console.log("Sending POST /groups...");
     await api.post("/groups", {
       name: name,
       pool: selectedPool.value,
@@ -53,12 +66,16 @@ const randomizeAndCreate = async () => {
 };
 
 const autoGenerate = async () => {
-  console.log("autoGenerate called");
+  console.log("autoGenerate called. Pool Teams:", poolTeams.value.length);
   if (poolTeams.value.length === 0) {
+    console.warn("No teams in pool");
     alert("No teams in this pool.");
     return;
   }
   if (poolTeams.value.length % 4 !== 0) {
+    console.warn(
+      `Pool teams count ${poolTeams.value.length} is not divisible by 4`,
+    );
     alert(
       `Cannot auto-generate: You have ${poolTeams.value.length} available teams, but each group requires exactly 4 teams.`,
     );
@@ -66,14 +83,19 @@ const autoGenerate = async () => {
   }
 
   const prefix = prompt("Enter Group Name Prefix (e.g. 'Group'):", "Group");
-  if (prefix === null) return;
+  if (prefix === null) {
+    console.log("User cancelled prefix prompt");
+    return;
+  }
 
   if (
     !confirm(
       `This will randomly assign ALL ${poolTeams.value.length} available teams in ${selectedPool.value} pool into ${poolTeams.value.length / 4} groups. Proceed?`,
     )
-  )
+  ) {
+    console.log("User cancelled confirmation");
     return;
+  }
 
   isProcessing.value = true;
   try {
