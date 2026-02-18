@@ -18,96 +18,83 @@ const poolTeams = computed(() => {
   return props.teams.filter((t) => t.pool === selectedPool.value);
 });
 
+// -- MODAL STATE --
+const showConfigModal = ref(false);
+const configModal = ref({
+  title: "",
+  description: "",
+  prefix: "", // Displayed before input
+  value: "", // User input
+  placeholder: "",
+  mode: "", // 'MANUAL' or 'AUTO'
+});
+
 // -- ACTIONS --
-const randomizeAndCreate = async () => {
-  console.log(
-    "randomizeAndCreate called. Selected:",
-    selectedTeamIds.value.length,
-  );
-  if (selectedTeamIds.value.length !== 4) {
-    console.warn("Selection count is not 4");
-    return;
-  }
+const openManualCreationModal = () => {
+  if (selectedTeamIds.value.length !== 4) return;
 
-  if (
-    !confirm(
-      `Confirm create group for ${selectedPool.value}? This will shuffle the 4 selected teams and generate matches.`,
-    )
-  ) {
-    console.log("User cancelled confirmation");
-    return;
-  }
-
-  isProcessing.value = true;
-  try {
-    const name = prompt("Enter Group Name (e.g. 'Group A'):", "Group A");
-    if (!name) {
-      console.log("User cancelled name prompt");
-      return;
-    }
-
-    console.log("Sending POST /groups...");
-    await api.post("/groups", {
-      name: name,
-      pool: selectedPool.value,
-      tournament_id: "00000000-0000-0000-0000-000000000000",
-      team_ids: selectedTeamIds.value,
-    });
-
-    alert("Group created and seeded successfully!");
-    selectedTeamIds.value = [];
-    emit("refresh");
-  } catch (err) {
-    console.error("Group creation failed:", err);
-    alert("Failed: " + (err.response?.data?.error || err.message));
-  } finally {
-    isProcessing.value = false;
-  }
+  configModal.value = {
+    title: "Create Single Group",
+    description: `Create a group for ${selectedPool.value} with the 4 selected teams.`,
+    prefix: "",
+    value: "Group A",
+    placeholder: "Enter full group name",
+    mode: "MANUAL",
+  };
+  showConfigModal.value = true;
 };
 
-const groupNameSuffix = ref("A");
-
-const autoGenerate = async () => {
-  console.log("autoGenerate called. Pool Teams:", poolTeams.value.length);
+const openAutoGenerateModal = () => {
   if (poolTeams.value.length === 0) {
-    console.warn("No teams in pool");
     alert("No teams in this pool.");
     return;
   }
   if (poolTeams.value.length % 4 !== 0) {
-    console.warn(
-      `Pool teams count ${poolTeams.value.length} is not divisible by 4`,
-    );
     alert(
-      `Cannot auto-generate: You have ${poolTeams.value.length} available teams, but each group requires exactly 4 teams.`,
+      `Cannot auto-generate: ${poolTeams.value.length} teams is not divisible by 4.`,
     );
     return;
   }
 
-  const prefix = "Group " + groupNameSuffix.value.trim();
+  configModal.value = {
+    title: "Auto-Generate All Groups",
+    description: `Randomly assign ${poolTeams.value.length} teams into ${poolTeams.value.length / 4} groups.`,
+    prefix: "Group ",
+    value: "A",
+    placeholder: "Enter suffix (e.g. A)",
+    mode: "AUTO",
+  };
+  showConfigModal.value = true;
+};
 
-  if (
-    !confirm(
-      `This will randomly assign ALL ${poolTeams.value.length} available teams in ${selectedPool.value} pool into ${poolTeams.value.length / 4} groups starting with '${prefix}'. Proceed?`,
-    )
-  ) {
-    console.log("User cancelled confirmation");
-    return;
-  }
+const handleModalConfirm = async () => {
+  if (!configModal.value.value) return;
 
   isProcessing.value = true;
   try {
-    console.log("Calling POST /groups/auto-generate with prefix:", prefix);
-    await api.post("/groups/auto-generate", {
-      pool: selectedPool.value,
-      tournament_id: "00000000-0000-0000-0000-000000000000",
-      name_prefix: prefix,
-    });
-
-    alert("Groups generated and seeded successfully!");
+    if (configModal.value.mode === "MANUAL") {
+      const name = configModal.value.value;
+      await api.post("/groups", {
+        name: name,
+        pool: selectedPool.value,
+        tournament_id: "00000000-0000-0000-0000-000000000000",
+        team_ids: selectedTeamIds.value,
+      });
+      alert("Group created successfully!");
+      selectedTeamIds.value = [];
+    } else {
+      const prefix = configModal.value.prefix + configModal.value.value.trim();
+      await api.post("/groups/auto-generate", {
+        pool: selectedPool.value,
+        tournament_id: "00000000-0000-0000-0000-000000000000",
+        name_prefix: prefix,
+      });
+      alert("Groups auto-generated successfully!");
+    }
     emit("refresh");
+    showConfigModal.value = false;
   } catch (err) {
-    console.error("Auto-generation failed:", err);
+    console.error("Operation failed:", err);
     alert("Failed: " + (err.response?.data?.error || err.message));
   } finally {
     isProcessing.value = false;
@@ -228,15 +215,64 @@ const autoGenerate = async () => {
         class="fixed bottom-8 right-8 z-30"
       >
         <button
-          @click="randomizeAndCreate"
+          @click="openManualCreationModal"
           :disabled="isProcessing"
           class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-transform flex items-center gap-2"
         >
           <span v-if="isProcessing" class="animate-spin">⏳</span>
-          <span v-else>🎲</span>
-          Randomize & Create Group
+          <span v-else>✨</span>
+          Create Group
         </button>
       </div>
     </transition>
+
+    <!-- Custom Config Modal -->
+    <div
+      v-if="showConfigModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+    >
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden font-outfit">
+        <div class="bg-violet-600 px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold text-white">{{ configModal.title }}</h3>
+            <button @click="showConfigModal = false" class="text-violet-200 hover:text-white">✕</button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+            <p class="text-sm text-gray-600">{{ configModal.description }}</p>
+            
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-gray-500 uppercase">Group Name</label>
+                <div class="flex items-center border border-gray-300 rounded-sm focus-within:ring-2 focus-within:ring-violet-500 overflow-hidden">
+                    <span v-if="configModal.prefix" class="bg-gray-50 px-3 py-2 text-gray-500 font-medium border-r border-gray-200 select-none">
+                        {{ configModal.prefix }}
+                    </span>
+                    <input 
+                        v-model="configModal.value"
+                        type="text" 
+                        :placeholder="configModal.placeholder"
+                        class="flex-1 px-3 py-2 outline-none text-gray-900 font-medium w-full"
+                        @keyup.enter="handleModalConfirm"
+                        autoFocus
+                    />
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-2">
+                <button 
+                  @click="showConfigModal = false"
+                  class="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-sm text-sm font-medium"
+                >Cancel</button>
+                <button 
+                  @click="handleModalConfirm"
+                  :disabled="isProcessing || !configModal.value"
+                  class="px-6 py-2 bg-violet-600 text-white font-bold rounded-sm hover:bg-violet-700 disabled:opacity-50 shadow-md transition-all active:scale-95 flex items-center gap-2"
+                >
+                    <span v-if="isProcessing" class="animate-spin">⏳</span>
+                    <span>Confirm</span>
+                </button>
+            </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
