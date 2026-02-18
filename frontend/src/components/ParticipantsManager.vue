@@ -113,6 +113,25 @@ const createTeam = async () => {
     );
   }
 };
+
+const autoPairTeams = async () => {
+  if (
+    !confirm(
+      "Auto-pair all remaining free participants into teams? Pairs will be random within same pool.",
+    )
+  )
+    return;
+
+  try {
+    const res = await api.post("/teams/auto-pair", {
+      tournament_id: "00000000-0000-0000-0000-000000000000",
+    });
+    alert(res.data.message);
+    emit("refresh");
+  } catch (err) {
+    alert("Failed to auto-pair: " + (err.response?.data?.error || err.message));
+  }
+};
 </script>
 
 <template>
@@ -140,12 +159,20 @@ const createTeam = async () => {
         </select>
       </div>
 
-      <button
-        @click="openTeamModal"
-        class="px-4 py-2 bg-violet-600 text-white font-medium rounded-sm btn-animated flex items-center gap-2"
-      >
-        <span>+ Form Team</span>
-      </button>
+      <div class="flex gap-2">
+        <button
+          @click="autoPairTeams"
+          class="px-4 py-2 border border-violet-200 text-violet-600 font-medium rounded-sm hover:bg-violet-50 flex items-center gap-2"
+        >
+          <span>🎲 Auto-Pair</span>
+        </button>
+        <button
+          @click="openTeamModal"
+          class="px-4 py-2 bg-violet-600 text-white font-medium rounded-sm btn-animated flex items-center gap-2"
+        >
+          <span>+ Form Team</span>
+        </button>
+      </div>
     </div>
 
     <!-- Table -->

@@ -2,8 +2,11 @@ package api
 
 import (
 	"net/http"
+	"time"
+	"math/rand"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"badminton_tournament/backend/internal/models"
 )
@@ -183,4 +186,88 @@ func (h *Handler) DeleteTeam(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Team disbanded"})
+}
+
+// AutoPairTeamsRequest
+type AutoPairTeamsRequest struct {
+	TournamentID uuid.UUID `json:"tournament_id"`
+}
+
+// AutoPairTeams - Randomly pairs available participants into teams
+func (h *Handler) AutoPairTeams(c *gin.Context) {
+	var req AutoPairTeamsRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 1. Fetch ALL Participants
+	var participants []models.Participant
+	if err := h.DB.NewSelect().Model(&participants).Scan(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch participants"})
+		return
+	}
+
+	// 2. Fetch Existing Teams to find BUSY participants
+	var existingTeams []models.Team
+	if err := h.DB.NewSelect().Model(&existingTeams).Scan(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
+		return
+	}
+
+	busyMap := make(map[uuid.UUID]bool)
+	for _, t := range existingTeams {
+		busyMap[t.Player1ID] = true
+		busyMap[t.Player2ID] = true
+	}
+
+	// 3. Group Free Participants by Pool
+	freeByPool := make(map[string][]models.Participant)
+	for _, p := range participants {
+		if !busyMap[p.ID] {
+			freeByPool[p.Pool] = append(freeByPool[p.Pool], p)
+		}
+	}
+
+	// 4. Randomly Pair
+	rand.Seed(time.Now().UnixNano())
+	var newTeams []models.Team
+
+	for pool, players := range freeByPool {
+		// Shuffle
+		rand.Shuffle(len(players), func(i, j int) {
+			players[i], players[j] = players[j], players[i]
+		})
+
+		// Pair
+		for i := 0; i < len(players)-1; i += 2 {
+			p1 := players[i]
+			p2 := players[i+1]
+
+			newTeams = append(newTeams, models.Team{
+				Player1ID: p1.ID,
+				Player2ID: p2.ID,
+				Pool:      pool,
+				Name:      p1.Name + " & " + p2.Name,
+			})
+		}
+	}
+
+	if len(newTeams) == 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "No new teams created", "count": 0})
+		return
+	}
+
+	// 5. Bulk Insert
+	if _, err := h.DB.NewInsert().Model(&newTeams).Exec(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create teams: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Teams auto-paired successfully",
+		"count":   len(newTeams),
+	})
 }
