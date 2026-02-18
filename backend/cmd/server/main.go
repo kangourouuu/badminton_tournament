@@ -33,7 +33,7 @@ func main() {
 	config := cors.DefaultConfig()
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 	if allowedOrigins != "" {
-		config.AllowOrigins = []string{allowedOrigins}
+		config.AllowOrigins = []string{allowedOrigins, "http://localhost:5173"}
 	} else {
 		config.AllowAllOrigins = true
 	}
