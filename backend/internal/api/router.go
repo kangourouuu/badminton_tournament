@@ -22,6 +22,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 
 	// Public
 	api.GET("/participants", h.ListParticipants)
+	api.POST("/participants", h.HandleFormWebhook) // Endpoint for Google Form Script
 	api.GET("/teams", h.ListTeams)
 	api.GET("/groups", h.ListGroups)
 	api.GET("/matches/:id", h.GetMatch)
