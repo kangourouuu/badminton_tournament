@@ -65,6 +65,8 @@ const randomizeAndCreate = async () => {
   }
 };
 
+const groupNameSuffix = ref("A");
+
 const autoGenerate = async () => {
   console.log("autoGenerate called. Pool Teams:", poolTeams.value.length);
   if (poolTeams.value.length === 0) {
@@ -82,15 +84,11 @@ const autoGenerate = async () => {
     return;
   }
 
-  const prefix = prompt("Enter Group Name Prefix (e.g. 'Group'):", "Group");
-  if (prefix === null) {
-    console.log("User cancelled prefix prompt");
-    return;
-  }
+  const prefix = "Group " + groupNameSuffix.value.trim();
 
   if (
     !confirm(
-      `This will randomly assign ALL ${poolTeams.value.length} available teams in ${selectedPool.value} pool into ${poolTeams.value.length / 4} groups. Proceed?`,
+      `This will randomly assign ALL ${poolTeams.value.length} available teams in ${selectedPool.value} pool into ${poolTeams.value.length / 4} groups starting with '${prefix}'. Proceed?`,
     )
   ) {
     console.log("User cancelled confirmation");
@@ -99,7 +97,7 @@ const autoGenerate = async () => {
 
   isProcessing.value = true;
   try {
-    console.log("Calling POST /groups/auto-generate");
+    console.log("Calling POST /groups/auto-generate with prefix:", prefix);
     await api.post("/groups/auto-generate", {
       pool: selectedPool.value,
       tournament_id: "00000000-0000-0000-0000-000000000000",
@@ -163,6 +161,18 @@ const autoGenerate = async () => {
           / 4
         </div>
         <div class="h-4 w-px bg-gray-200"></div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-gray-500">Group</span>
+          <input
+            v-model="groupNameSuffix"
+            type="text"
+            placeholder="A"
+            class="w-12 text-center border border-gray-300 rounded-sm text-sm py-1 focus:ring-violet-500 focus:border-violet-500 uppercase"
+            maxlength="5"
+          />
+        </div>
+
         <button
           @click="autoGenerate"
           :disabled="isProcessing || poolTeams.length === 0"
