@@ -149,19 +149,8 @@ const handleModalConfirm = async () => {
         </div>
         <div class="h-4 w-px bg-gray-200"></div>
 
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-medium text-gray-500">Group</span>
-          <input
-            v-model="groupNameSuffix"
-            type="text"
-            placeholder="A"
-            class="w-12 text-center border border-gray-300 rounded-sm text-sm py-1 focus:ring-violet-500 focus:border-violet-500 uppercase"
-            maxlength="5"
-          />
-        </div>
-
         <button
-          @click="autoGenerate"
+          @click="openAutoGenerateModal"
           :disabled="isProcessing || poolTeams.length === 0"
           class="text-violet-600 hover:text-violet-800 font-bold flex items-center gap-1 disabled:opacity-50"
         >
@@ -231,46 +220,62 @@ const handleModalConfirm = async () => {
       v-if="showConfigModal"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
     >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden font-outfit">
+      <div
+        class="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden font-outfit"
+      >
         <div class="bg-violet-600 px-6 py-4 flex justify-between items-center">
-            <h3 class="font-bold text-white">{{ configModal.title }}</h3>
-            <button @click="showConfigModal = false" class="text-violet-200 hover:text-white">✕</button>
+          <h3 class="font-bold text-white">{{ configModal.title }}</h3>
+          <button
+            @click="showConfigModal = false"
+            class="text-violet-200 hover:text-white"
+          >
+            ✕
+          </button>
         </div>
-        
+
         <div class="p-6 space-y-4">
-            <p class="text-sm text-gray-600">{{ configModal.description }}</p>
-            
-            <div class="space-y-1">
-                <label class="block text-xs font-bold text-gray-500 uppercase">Group Name</label>
-                <div class="flex items-center border border-gray-300 rounded-sm focus-within:ring-2 focus-within:ring-violet-500 overflow-hidden">
-                    <span v-if="configModal.prefix" class="bg-gray-50 px-3 py-2 text-gray-500 font-medium border-r border-gray-200 select-none">
-                        {{ configModal.prefix }}
-                    </span>
-                    <input 
-                        v-model="configModal.value"
-                        type="text" 
-                        :placeholder="configModal.placeholder"
-                        class="flex-1 px-3 py-2 outline-none text-gray-900 font-medium w-full"
-                        @keyup.enter="handleModalConfirm"
-                        autoFocus
-                    />
-                </div>
+          <p class="text-sm text-gray-600">{{ configModal.description }}</p>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-gray-500 uppercase"
+              >Group Name</label
+            >
+            <div
+              class="flex items-center border border-gray-300 rounded-sm focus-within:ring-2 focus-within:ring-violet-500 overflow-hidden"
+            >
+              <span
+                v-if="configModal.prefix"
+                class="bg-gray-50 px-3 py-2 text-gray-500 font-medium border-r border-gray-200 select-none"
+              >
+                {{ configModal.prefix }}
+              </span>
+              <input
+                v-model="configModal.value"
+                type="text"
+                :placeholder="configModal.placeholder"
+                class="flex-1 px-3 py-2 outline-none text-gray-900 font-medium w-full"
+                @keyup.enter="handleModalConfirm"
+                autoFocus
+              />
             </div>
-            
-            <div class="flex justify-end gap-3 pt-2">
-                <button 
-                  @click="showConfigModal = false"
-                  class="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-sm text-sm font-medium"
-                >Cancel</button>
-                <button 
-                  @click="handleModalConfirm"
-                  :disabled="isProcessing || !configModal.value"
-                  class="px-6 py-2 bg-violet-600 text-white font-bold rounded-sm hover:bg-violet-700 disabled:opacity-50 shadow-md transition-all active:scale-95 flex items-center gap-2"
-                >
-                    <span v-if="isProcessing" class="animate-spin">⏳</span>
-                    <span>Confirm</span>
-                </button>
-            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button
+              @click="showConfigModal = false"
+              class="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-sm text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              @click="handleModalConfirm"
+              :disabled="isProcessing || !configModal.value"
+              class="px-6 py-2 bg-violet-600 text-white font-bold rounded-sm hover:bg-violet-700 disabled:opacity-50 shadow-md transition-all active:scale-95 flex items-center gap-2"
+            >
+              <span v-if="isProcessing" class="animate-spin">⏳</span>
+              <span>Confirm</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

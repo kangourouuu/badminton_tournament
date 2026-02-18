@@ -6,6 +6,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  nextMatchLabel: {
+    type: String,
+    default: "",
+  },
 });
 
 defineEmits(["click"]);
@@ -70,13 +74,25 @@ const teamBClass = computed(() => {
 
     <!-- Footer metadata (hidden if not finished?) -->
     <div
-      v-if="isFinished"
       class="mt-4 pt-3 border-t border-gray-50 flex justify-between items-center"
     >
-      <span
-        class="text-[10px] font-bold text-violet-600 uppercase tracking-widest"
-        >{{ match.score }}</span
+      <div v-if="isFinished">
+        <span
+          class="text-[10px] font-bold text-violet-600 uppercase tracking-widest"
+          >{{ match.score }}</span
+        >
+      </div>
+      <div
+        v-else-if="nextMatchLabel"
+        class="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1"
       >
+        <span>Winner to</span>
+        <span class="bg-gray-100 text-gray-600 px-1 rounded">{{
+          nextMatchLabel
+        }}</span>
+      </div>
+      <div v-else></div>
+
       <div v-if="match.video_url" class="text-violet-400 hover:text-violet-600">
         <svg
           xmlns="http://www.w3.org/2000/svg"
