@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"badminton_tournament/backend/internal/models"
 )
@@ -246,9 +247,6 @@ func (h *Handler) AutoPairTeams(c *gin.Context) {
 			p2 := players[i+1]
 
 			newTeams = append(newTeams, models.Team{
-				TournamentID: req.TournamentID, // Assuming Team model has TournamentID? Wait, checked models.go, Team does NOT have TournamentID. It relies on Group link?
-				// Recalling models.go: Team struct: ID, Player1ID, Player2ID, Pool, Name. NO TournamentID.
-				// So we don't set it.
 				Player1ID: p1.ID,
 				Player2ID: p2.ID,
 				Pool:      pool,

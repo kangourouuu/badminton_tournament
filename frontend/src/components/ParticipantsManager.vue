@@ -157,11 +157,10 @@ const autoPairTeams = async () => {
           <option value="FREE">Free</option>
           <option value="BUSY">In Team</option>
         </select>
-        </select>
       </div>
 
       <div class="flex gap-2">
-         <button
+        <button
           @click="autoPairTeams"
           class="px-4 py-2 border border-violet-200 text-violet-600 font-medium rounded-sm hover:bg-violet-50 flex items-center gap-2"
         >
