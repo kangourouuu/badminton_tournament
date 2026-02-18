@@ -9,10 +9,12 @@ import (
 
 // Webhook for Google Form
 // Expected format from Google Script
+// Webhook for Google Form
+// Updated format: { "name": "...", "group": "...", "partner_request": "..." }
 type GoogleFormRequest struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	Pool  string `json:"pool"`
+	Name           string `json:"name"`
+	Group          string `json:"group"`           // Maps to Pool
+	PartnerRequest string `json:"partner_request"` // Desired Teammate
 }
 
 func (h *Handler) HandleFormWebhook(c *gin.Context) {
@@ -22,17 +24,25 @@ func (h *Handler) HandleFormWebhook(c *gin.Context) {
 		return
 	}
 
+	// Auto-generate pseudo-email since it's removed from form but required by DB
+	// Format: name_sanitized@placeholder.badminton
+	// This relies on Name being unique enough, or we accept overwrite if Name is identical.
+	sanitized := models.SanitizeNameForEmail(req.Name)
+	pseudoEmail := sanitized + "@placeholder.badminton"
+
 	participant := &models.Participant{
-		Email: req.Email,
-		Name:  req.Name,
-		Pool:  req.Pool,
+		Email:          pseudoEmail,
+		Name:           req.Name,
+		Pool:           req.Group, // Google Form "group" -> DB "pool"
+		PartnerRequest: req.PartnerRequest,
 	}
 
-	// Upsert: On conflict email, update name/pool
+	// Upsert: On conflict email (which is driven by name now), update info
 	_, err := h.DB.NewInsert().Model(participant).
 		On("CONFLICT (email) DO UPDATE").
 		Set("name = EXCLUDED.name").
 		Set("pool = EXCLUDED.pool").
+		Set("partner_request = EXCLUDED.partner_request").
 		Exec(c.Request.Context())
 
 	if err != nil {

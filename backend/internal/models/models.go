@@ -23,6 +23,7 @@ type Participant struct {
 	Email     string    `bun:"email,unique,notnull" json:"email"`
 	Name      string    `bun:"name,notnull" json:"name"`
 	Pool      string    `bun:"pool,notnull" json:"pool"` // 'Mesoneer', 'Lab'
+	PartnerRequest string `bun:"partner_request" json:"partner_request"` // Desired Teammate
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
 }
 
