@@ -53,6 +53,7 @@ const randomizeAndCreate = async () => {
 };
 
 const autoGenerate = async () => {
+  console.log("autoGenerate called");
   if (poolTeams.value.length === 0) {
     alert("No teams in this pool.");
     return;
@@ -76,6 +77,7 @@ const autoGenerate = async () => {
 
   isProcessing.value = true;
   try {
+    console.log("Calling POST /groups/auto-generate");
     await api.post("/groups/auto-generate", {
       pool: selectedPool.value,
       tournament_id: "00000000-0000-0000-0000-000000000000",

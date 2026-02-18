@@ -101,6 +101,7 @@ const openScoreModal = (match, stage = "KNOCKOUT") => {
 };
 
 const generateKnockout = async () => {
+  console.log("generateKnockout called");
   if (
     !confirm(
       "Generate Knockout Stage (Semi-Finals)? This will create the 'KNOCKOUT' group if it doesn't exist.",
@@ -108,12 +109,14 @@ const generateKnockout = async () => {
   )
     return;
   try {
+    console.log("Calling POST /tournaments/knockout");
     await api.post("/tournaments/knockout", {
       tournament_id: "00000000-0000-0000-0000-000000000000",
     });
     alert("Knockout Stage Generated!");
     fetchData();
   } catch (err) {
+    console.error("Knockout Generation Error:", err);
     alert("Error: " + (err.response?.data?.error || err.message));
   }
 };
