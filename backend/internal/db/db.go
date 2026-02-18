@@ -118,6 +118,7 @@ func CreateSchema(ctx context.Context) error {
 	for _, model := range modelsToRegister {
 		_, err := DB.NewCreateTable().Model(model).IfNotExists().Exec(ctx)
 		if err != nil {
+			log.Printf("Error creating table for model %T: %v", model, err)
 			return err
 		}
 	}
