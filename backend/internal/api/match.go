@@ -216,19 +216,24 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 	// Rank 1 Group B (Lab)      vs Rank 2 Group A (Mesoneer) -> SF2
 
 	isPoolA := group.Pool == "Mesoneer"
+	isPoolA := group.Pool == "Mesoneer"
 	if isPoolA {
 		if rank == 1 {
+			// TICKET 1: Group M Winner -> SF1 (Slot 1)
 			targetLabel = "SF1"
 			targetCol = "team_a_id"
-		} else { // Runner-up Group A goes to SF2
+		} else { 
+			// TICKET 2: Group M Runner-up -> SF2 (Slot 2) [Cross-over]
 			targetLabel = "SF2"
 			targetCol = "team_b_id"
 		}
 	} else { // Pool B (Lab)
 		if rank == 1 {
+			// TICKET 1: Group L Winner -> SF2 (Slot 1)
 			targetLabel = "SF2"
 			targetCol = "team_a_id"
-		} else { // Runner-up Group B goes to SF1
+		} else { 
+			// TICKET 2: Group L Runner-up -> SF1 (Slot 2) [Cross-over]
 			targetLabel = "SF1"
 			targetCol = "team_b_id"
 		}
