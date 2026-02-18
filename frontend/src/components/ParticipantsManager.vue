@@ -44,7 +44,10 @@ const filteredParticipants = computed(() => {
     const matchSearch =
       !filters.value.search ||
       p.name.toLowerCase().includes(filters.value.search.toLowerCase()) ||
-      p.email.toLowerCase().includes(filters.value.search.toLowerCase());
+      (p.partner_request &&
+        p.partner_request
+          .toLowerCase()
+          .includes(filters.value.search.toLowerCase()));
 
     // 2. Pool
     const matchPool =
@@ -144,7 +147,7 @@ const autoPairTeams = async () => {
         <input
           v-model="filters.search"
           type="text"
-          placeholder="Search name/email..."
+          placeholder="Search name/request..."
           class="input-material min-w-[200px]"
         />
         <select v-model="filters.pool" class="input-material w-32">
@@ -183,7 +186,7 @@ const autoPairTeams = async () => {
         <thead class="bg-gray-50 text-gray-500 font-medium uppercase text-xs">
           <tr>
             <th class="px-6 py-3">Name</th>
-            <th class="px-6 py-3">Email</th>
+            <th class="px-6 py-3">Partner Request</th>
             <th class="px-6 py-3">Pool</th>
             <th class="px-6 py-3">Status</th>
           </tr>
@@ -195,7 +198,9 @@ const autoPairTeams = async () => {
             class="hover:bg-gray-50 transition-colors"
           >
             <td class="px-6 py-3 font-medium text-gray-900">{{ p.name }}</td>
-            <td class="px-6 py-3 text-gray-500">{{ p.email }}</td>
+            <td class="px-6 py-3 text-gray-500 italic">
+              {{ p.partner_request || "-" }}
+            </td>
             <td class="px-6 py-3">
               <span
                 :class="{
