@@ -216,7 +216,6 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 	// Rank 1 Group B (Lab)      vs Rank 2 Group A (Mesoneer) -> SF2
 
 	isPoolA := group.Pool == "Mesoneer"
-	isPoolA := group.Pool == "Mesoneer"
 	if isPoolA {
 		if rank == 1 {
 			// TICKET 1: Group M Winner -> SF1 (Slot 1)
