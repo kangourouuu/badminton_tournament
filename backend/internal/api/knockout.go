@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"badminton_tournament/backend/internal/models"
+	"fmt"
 )
 
 // GenerateKnockoutRequest
@@ -20,44 +21,46 @@ func (h *Handler) GenerateKnockout(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-
-	// 1. Check if "KNOCKOUT" group already exists
-	count, _ := h.DB.NewSelect().Model((*models.Group)(nil)).
-		Where("tournament_id = ? AND name = ?", req.TournamentID, "KNOCKOUT").
-		Count(ctx)
-	if count > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Knockout stage already exists"})
+	group, err := h.EnsureKnockoutStage(c.Request.Context(), req.TournamentID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	c.JSON(http.StatusOK, gin.H{"status": "created", "group_id": group.ID})
+}
+
+// EnsureKnockoutStage checks for existence and creates if missing. Returns the Group.
+func (h *Handler) EnsureKnockoutStage(ctx context.Context, tournamentID uuid.UUID) (*models.Group, error) {
+	// 1. Check if "KNOCKOUT" group already exists
+	var existingGroup models.Group
+	if err := h.DB.NewSelect().Model(&existingGroup).
+		Where("tournament_id = ? AND name = ?", tournamentID, "KNOCKOUT").
+		Relation("Matches").
+		Scan(ctx); err == nil {
+		return &existingGroup, nil
+	}
+
 	// 2. Fetch all groups and their matches to determine qualifiers
-	// Assumption: Group A and Group B are the only groups, or we take top 2 from any 2 groups found.
-	// For simplicity in this 1-day build, let's assume standard 2-group format (Mesoneer logic).
 	var groups []models.Group
 	err := h.DB.NewSelect().Model(&groups).
-		Where("tournament_id = ?", req.TournamentID).
+		Where("tournament_id = ?", tournamentID).
 		Relation("Matches").
 		Order("name ASC"). // Group A first, then Group B
 		Scan(ctx)
 	
 	if err != nil || len(groups) < 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Need at least 2 groups to generate knockout"})
-		return
+		return nil, fmt.Errorf("Need at least 2 groups to generate knockout")
 	}
 
 	// 3. Identify Qualifiers
-	// Logic:
-	// - Winner of M3 (Winners Match) -> 1st Place
-	// - Winner of M5 (Decider Match) -> 2nd Place
-	
 	type Qualifier struct {
 		TeamID uuid.UUID
 		Rank   int // 1 or 2
 		GroupID uuid.UUID
 	}
 	
-	qualifiers := make(map[uuid.UUID][]Qualifier) // GroupID -> []Qualifier
+	qualifiers := make(map[uuid.UUID][]Qualifier)
 
 	for _, g := range groups {
 		var first, second uuid.UUID
@@ -78,44 +81,17 @@ func (h *Handler) GenerateKnockout(c *gin.Context) {
 		}
 	}
 
-	// Validate we have enough qualifiers
-	// We need A1, A2, B1, B2
-	groupA := groups[0]
-	groupB := groups[1]
-	
-	if len(qualifiers[groupA.ID]) < 2 || len(qualifiers[groupB.ID]) < 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Matches not finished. Determine 1st and 2nd place for all groups."})
-		return
-	}
-
-	var a1, a2, b1, b2 uuid.UUID
-	
-	// Map properly
-	for _, q := range qualifiers[groupA.ID] {
-		if q.Rank == 1 { a1 = q.TeamID } else { a2 = q.TeamID }
-	}
-	for _, q := range qualifiers[groupB.ID] {
-		if q.Rank == 1 { b1 = q.TeamID } else { b2 = q.TeamID }
-	}
-
 	// 4. Create "KNOCKOUT" Group
 	kGroup := &models.Group{
-		TournamentID: req.TournamentID,
+		TournamentID: tournamentID,
 		Name:         "KNOCKOUT",
 	}
 	_, err = h.DB.NewInsert().Model(kGroup).Exec(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create knockout group"})
-		return
+		return nil, fmt.Errorf("Failed to create knockout group: %v", err)
 	}
 
 	// 5. Create Matches (Semi-Finals & Finals)
-	// Structure:
-	// SF1: A1 vs B2 -> Win: Final, Lose: Bronze
-	// SF2: B1 vs A2 -> Win: Final, Lose: Bronze
-	// Bronze: Loser SF1 vs Loser SF2
-	// Final: Winner SF1 vs Winner SF2
-
 	// Create Final & Bronze first to get IDs
 	final := &models.Match{GroupID: kGroup.ID, Label: "Final"}
 	_, _ = h.DB.NewInsert().Model(final).Exec(ctx)
@@ -123,12 +99,10 @@ func (h *Handler) GenerateKnockout(c *gin.Context) {
 	bronze := &models.Match{GroupID: kGroup.ID, Label: "Bronze"}
 	_, _ = h.DB.NewInsert().Model(bronze).Exec(ctx)
 
-	// Create SF1 (Cross A1 vs B2)
+	// Create SF1 (Cross A1 vs B2) - Placeholders only, teams filled by promotion
 	sf1 := &models.Match{
 		GroupID: kGroup.ID, 
 		Label: "SF1", 
-		TeamAID: a1, 
-		TeamBID: b2,
 		NextMatchWinID: final.ID,
 		NextMatchLoseID: bronze.ID,
 	}
@@ -138,12 +112,15 @@ func (h *Handler) GenerateKnockout(c *gin.Context) {
 	sf2 := &models.Match{
 		GroupID: kGroup.ID, 
 		Label: "SF2", 
-		TeamAID: b1, 
-		TeamBID: a2,
 		NextMatchWinID: final.ID,
 		NextMatchLoseID: bronze.ID,
 	}
 	_, _ = h.DB.NewInsert().Model(sf2).Exec(ctx)
 
-	c.JSON(http.StatusOK, gin.H{"status": "created", "group_id": kGroup.ID})
+	// Fetch fresh to return with matches
+	if err := h.DB.NewSelect().Model(kGroup).Relation("Matches").WherePK().Scan(ctx); err != nil {
+		return nil, fmt.Errorf("Failed to reload knockout group: %v", err)
+	}
+	
+	return kGroup, nil
 }
