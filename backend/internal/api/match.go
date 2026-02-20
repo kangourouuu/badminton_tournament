@@ -28,7 +28,7 @@ func (h *Handler) GetMatch(c *gin.Context) {
 		Model(&match).
 		Relation("TeamA").
 		Relation("TeamB").
-		Where("id = ?", id).
+		Where("m.id = ?", id).
 		Scan(ctx)
 		
 	if err != nil {
