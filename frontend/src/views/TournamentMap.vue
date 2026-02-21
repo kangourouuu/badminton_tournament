@@ -224,14 +224,14 @@ onMounted(() => {
             <!-- Final -->
             <div class="flex flex-col items-center gap-2">
               <div
-                class="text-[20px] font-black text-amber-600 uppercase tracking-[1em] text-center"
+                class="text-[20px] font-black text-yellow-700 uppercase tracking-[1em] text-center mb-4"
               >
                 Grand Final
               </div>
               <MatchNode
                 :match="final"
                 @click="!final.isGhost && handleMatchClick($event)"
-                class="scale-[1.6] shadow-2xl border-violet-100"
+                class="scale-[1.6] shadow-2xl border-violet-100 origin-top"
                 :class="{ 'opacity-75': final.isGhost }"
               />
             </div>
