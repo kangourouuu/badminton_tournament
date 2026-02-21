@@ -17,17 +17,17 @@ defineEmits(["click"]);
 const isFinished = computed(() => props.match.winner_id);
 
 const teamAClass = computed(() => {
-  if (!isFinished.value) return "text-gray-700";
+  if (!isFinished.value) return "text-black";
   return props.match.winner_id === props.match.team_a_id
     ? "font-black text-violet-700"
-    : "text-gray-400";
+    : "text-red-600";
 });
 
 const teamBClass = computed(() => {
-  if (!isFinished.value) return "text-gray-700";
+  if (!isFinished.value) return "text-black";
   return props.match.winner_id === props.match.team_b_id
     ? "font-black text-violet-700"
-    : "text-gray-400";
+    : "text-red-600";
 });
 </script>
 
