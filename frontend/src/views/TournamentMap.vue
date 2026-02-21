@@ -142,7 +142,7 @@ onMounted(() => {
 
       <div v-else class="relative flex justify-between gap-40 min-w-[2000px]">
         <!-- Column: Session A -->
-        <div class="flex flex-col gap-32 z-10">
+        <div class="flex flex-col gap-32 z-10 justify-center">
           <div
             v-for="g in mesoneerGroups"
             :key="g.id"
@@ -222,9 +222,9 @@ onMounted(() => {
             </div>
 
             <!-- Final -->
-            <div class="flex flex-col items-center gap-4">
+            <div class="flex flex-col items-center gap-2">
               <div
-                class="text-[20px] font-black text-black uppercase tracking-[1em] text-center"
+                class="text-[20px] font-black text-gray-900 uppercase tracking-[1em] text-center mb-1"
               >
                 Grand Final
               </div>
@@ -269,7 +269,7 @@ onMounted(() => {
         </div>
 
         <!-- Column: Session B -->
-        <div class="flex flex-col gap-32 z-10">
+        <div class="flex flex-col gap-32 z-10 justify-center">
           <div
             v-for="g in labGroups"
             :key="g.id"
