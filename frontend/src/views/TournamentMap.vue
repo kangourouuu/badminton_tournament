@@ -143,26 +143,13 @@ onMounted(() => {
       <div v-else class="relative flex justify-between gap-40 min-w-[2000px]">
         <!-- Column: Session A -->
         <div class="flex flex-col gap-32 z-10">
-          <div class="space-y-2 mb-10 pl-2">
-            <h2
-              class="text-xs font-black text-violet-600 uppercase tracking-[0.3em]"
-            >
-              Session A
-            </h2>
-            <div
-              class="text-2xl font-black text-gray-900 italic uppercase tracking-tighter"
-            >
-              Mesoneer Base
-            </div>
-          </div>
-
           <div
             v-for="g in mesoneerGroups"
             :key="g.id"
             class="space-y-12 pb-20 border-b border-gray-50 last:border-0"
           >
             <div
-              class="text-[10px] font-bold text-gray-300 uppercase tracking-widest"
+              class="text-[16px] font-bold text-black uppercase tracking-widest"
             >
               {{ g.name }}
             </div>
@@ -222,7 +209,7 @@ onMounted(() => {
             <!-- SF1 -->
             <div class="flex flex-col items-center gap-2">
               <div
-                class="text-[10px] font-black text-gray-300 uppercase tracking-[0.5em] text-center"
+                class="text-[20px] font-black text-black uppercase tracking-[0.5em] text-center"
               >
                 Semi Final 1
               </div>
@@ -237,7 +224,7 @@ onMounted(() => {
             <!-- Final -->
             <div class="flex flex-col items-center gap-4">
               <div
-                class="text-xs font-black text-violet-600 uppercase tracking-[1em] text-center"
+                class="text-[20px] font-black text-black uppercase tracking-[1em] text-center"
               >
                 Grand Final
               </div>
@@ -252,7 +239,7 @@ onMounted(() => {
             <!-- SF2 -->
             <div class="flex flex-col items-center gap-2">
               <div
-                class="text-[10px] font-black text-gray-300 uppercase tracking-[0.5em] text-center"
+                class="text-[20px] font-black text-black uppercase tracking-[0.5em] text-center"
               >
                 Semi Final 2
               </div>
@@ -267,7 +254,7 @@ onMounted(() => {
             <!-- Bronze -->
             <div class="mt-8 opacity-50 flex flex-col items-center gap-2">
               <div
-                class="text-[8px] font-black text-gray-400 uppercase tracking-widest text-center"
+                class="text-[20px] font-black text-black uppercase tracking-widest text-center"
               >
                 Bronze Match
               </div>
@@ -283,26 +270,13 @@ onMounted(() => {
 
         <!-- Column: Session B -->
         <div class="flex flex-col gap-32 z-10">
-          <div class="space-y-2 mb-10 text-right pr-2">
-            <h2
-              class="text-xs font-black text-emerald-600 uppercase tracking-[0.3em]"
-            >
-              Session B
-            </h2>
-            <div
-              class="text-2xl font-black text-gray-900 italic uppercase tracking-tighter"
-            >
-              Lab Colony
-            </div>
-          </div>
-
           <div
             v-for="g in labGroups"
             :key="g.id"
             class="space-y-12 pb-20 border-b border-gray-50 last:border-0 items-end flex flex-col"
           >
             <div
-              class="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-right"
+              class="text-[16px] font-bold text-black uppercase tracking-widest text-right"
             >
               {{ g.name }}
             </div>
