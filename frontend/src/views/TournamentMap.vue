@@ -224,7 +224,7 @@ onMounted(() => {
             <!-- Final -->
             <div class="flex flex-col items-center gap-2">
               <div
-                class="text-[20px] font-black text-gray-900 uppercase tracking-[1em] text-center mb-1"
+                class="text-[20px] font-black text-amber-600 uppercase tracking-[1em] text-center"
               >
                 Grand Final
               </div>
