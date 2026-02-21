@@ -16,15 +16,24 @@ defineEmits(["click"]);
 
 const isFinished = computed(() => props.match.winner_id);
 
+// Only apply winner/loser colors when winner actually matches one of the teams (finished match).
+// Otherwise treat as unfinished so both names stay black (e.g. Round 2 with TBD or stale winner_id).
+const hasKnownWinner = computed(
+  () =>
+    isFinished.value &&
+    (props.match.winner_id === props.match.team_a_id ||
+      props.match.winner_id === props.match.team_b_id),
+);
+
 const teamAClass = computed(() => {
-  if (!isFinished.value) return "text-black";
+  if (!hasKnownWinner.value) return "text-black";
   return props.match.winner_id === props.match.team_a_id
     ? "font-black text-violet-700"
     : "text-red-600";
 });
 
 const teamBClass = computed(() => {
-  if (!isFinished.value) return "text-black";
+  if (!hasKnownWinner.value) return "text-black";
   return props.match.winner_id === props.match.team_b_id
     ? "font-black text-violet-700"
     : "text-red-600";
