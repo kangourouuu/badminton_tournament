@@ -222,7 +222,7 @@ onMounted(() => {
             </div>
 
             <!-- Final -->
-            <div class="flex flex-col items-center gap-2">
+            <div class="flex flex-col items-center gap-2 mb-16">
               <div
                 class="text-[20px] font-black text-yellow-700 uppercase tracking-[1em] text-center mb-4"
               >
