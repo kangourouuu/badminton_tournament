@@ -30,7 +30,7 @@ func (h *Handler) GetMatch(c *gin.Context) {
 		Relation("TeamB").
 		Where("m.id = ?", id).
 		Scan(ctx)
-		
+
 	if err != nil {
 		log.Printf("Error fetching match %s: %v", id, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Match not found"})
@@ -94,12 +94,12 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 			log.Printf("[Auto-Propagation] Promoting Group Rank 1 (Winner %s) to Knockout", req.WinnerID)
 			h.promoteToKnockout(ctx, match.GroupID, 1, req.WinnerID)
 		} else if match.Label == "Decider" { // M5 winner is Rank 2
-			log.Printf("[Auto-Propagation] Promoting Group Rank 2 (Decider Winner %s) to Knockout", req.WinnerID)
+			log.Printf("[Auto-Promotion] Promoting Group Rank 2 (Decider Winner %s) to Knockout", req.WinnerID)
 			if err := h.promoteToKnockout(ctx, match.GroupID, 2, req.WinnerID); err != nil {
-				log.Printf("[Auto-Propagation] ERROR promoting decider: %v", err)
+				log.Printf("[Auto-Promotion] ERROR promoting decider: %v", err)
 			}
 		} else if match.NextMatchWinID != uuid.Nil {
-			log.Printf("[Auto-Propagation] Propagating WINNER %s to Match %s (Source: %s)", req.WinnerID, match.NextMatchWinID, match.Label)
+			log.Printf("[Auto-Promotion] Propagating WINNER %s to Match %s (Source: %s)", req.WinnerID, match.NextMatchWinID, match.Label)
 			h.propagateToMatch(ctx, match.NextMatchWinID, req.WinnerID, match.Label, "win")
 		} else {
              // Fallback for others
@@ -107,9 +107,11 @@ func (h *Handler) UpdateMatch(c *gin.Context) {
 
 		// Propagate Loser
 		if match.NextMatchLoseID != uuid.Nil && loserID != uuid.Nil {
-			log.Printf("[Auto-Propagation] Propagating LOSER %s to Match %s (Source: %s)", loserID, match.NextMatchLoseID, match.Label)
+			log.Printf("[Auto-Promotion] Propagating LOSER %s to Match %s (Source: %s)", loserID, match.NextMatchLoseID, match.Label)
 			// Ensure "lose" outcome is passed for Bronze logic
 			h.propagateToMatch(ctx, match.NextMatchLoseID, loserID, match.Label, "lose")
+		} else if match.Label == "Losers" || match.Label == "Decider" {
+			log.Printf("[Auto-Promotion] Team %s is ELIMINATED from tournament (Lost in %s)", loserID, match.Label)
 		}
 	}
 
@@ -139,8 +141,10 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 		}
 	case "Decider": // M5
 		if sourceLabel == "Winners" { // Loser of M3 goes to Slot 1
+			log.Printf("[Auto-Promotion] Routing Loser from M3 (Winners) to Decider Match Team A: %s", teamID)
 			col = "team_a_id"
 		} else if sourceLabel == "Losers" { // Winner of M4 goes to Slot 2
+			log.Printf("[Auto-Promotion] Routing Winner from M4 (Losers) to Decider Match Team B: %s", teamID)
 			col = "team_b_id"
 		}
 	case "Final": // Knockout Final
@@ -160,6 +164,7 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 
 	// Fallback to "First Empty" if label specific logic not matched
 	if col == "" {
+		log.Printf("[Auto-Promotion] Fallback routing activated for target %s from source %s with team %s", target.Label, sourceLabel, teamID)
 		if target.TeamAID == uuid.Nil {
 			col = "team_a_id"
 		} else if target.TeamBID == uuid.Nil {
@@ -168,7 +173,7 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 	}
 
 	if col != "" {
-		log.Printf("PROMOTION SUCCESS: Pushed Player %v to Match ID %v", teamID, target.ID)
+		log.Printf("[Auto-Promotion] SUCCESS: Pushed Player %s to Match ID %s (Column: %s)", teamID, target.ID, col)
 		_, err := h.DB.NewUpdate().Model(&target).Set(col+" = ?", teamID).WherePK().Exec(ctx)
 		return err
 	}

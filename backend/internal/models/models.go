@@ -23,6 +23,7 @@ type Participant struct {
 	Name      string    `bun:"name,unique,notnull" json:"name"` // Name is now the unique key
 	Pool      string    `bun:"pool,notnull" json:"pool"` // 'Mesoneer', 'Lab'
 	PartnerRequest string `bun:"partner_request" json:"partner_request"` // Desired Teammate
+	Gender         string `bun:"gender" json:"gender"`                   // Nullable/Empty for flexibility
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
 }
 
@@ -35,6 +36,7 @@ type Team struct {
 	Player2ID uuid.UUID `bun:"player2_id,type:uuid" json:"player2_id"` // Nullable logic handled by pointer or omitted if strict
 	Pool      string    `bun:"pool,notnull" json:"pool"`
 	Name      string    `bun:"name,notnull" json:"name"`
+	Category  string    `bun:"category" json:"category"`
 
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
 
@@ -51,6 +53,7 @@ type Group struct {
 	TournamentID uuid.UUID `bun:"tournament_id,type:uuid" json:"tournament_id"`
 	Name         string    `bun:"name,notnull" json:"name"` // "Group A"
 	Pool         string    `bun:"pool,notnull" json:"pool"` // "Mesoneer" or "Lab"
+	Category     string    `bun:"category" json:"category"`
 
 	// Relations
 	Matches []*Match `bun:"rel:has-many,join:id=group_id" json:"matches,omitempty"`

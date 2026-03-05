@@ -15,6 +15,7 @@ type GoogleFormRequest struct {
 	Name           string `json:"name"`
 	Group          string `json:"group"`           // Maps to Pool
 	PartnerRequest string `json:"partner_request"` // Desired Teammate
+	Gender         string `json:"gender"`
 }
 
 func (h *Handler) HandleFormWebhook(c *gin.Context) {
@@ -30,6 +31,7 @@ func (h *Handler) HandleFormWebhook(c *gin.Context) {
 		Name:           req.Name,
 		Pool:           req.Group, // Google Form "group" -> DB "pool"
 		PartnerRequest: req.PartnerRequest,
+		Gender:         req.Gender,
 	}
 
 	// Upsert: On conflict name, update pool/partner_request
@@ -37,6 +39,7 @@ func (h *Handler) HandleFormWebhook(c *gin.Context) {
 		On("CONFLICT (name) DO UPDATE").
 		Set("pool = EXCLUDED.pool").
 		Set("partner_request = EXCLUDED.partner_request").
+		Set("gender = EXCLUDED.gender").
 		Exec(c.Request.Context())
 
 	if err != nil {

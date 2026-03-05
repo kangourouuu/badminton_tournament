@@ -15,6 +15,7 @@ import (
 
 func (h *Handler) ListTeams(c *gin.Context) {
 	pool := c.Query("pool")
+	category := c.Query("category")
 	available := c.Query("available") == "true"
 
 	var teams []models.Team
@@ -22,6 +23,9 @@ func (h *Handler) ListTeams(c *gin.Context) {
 
 	if pool != "" {
 		query.Where("tm.pool = ?", pool)
+	}
+	if category != "" {
+		query.Where("tm.category = ?", category)
 	}
 
 	if available {
@@ -47,6 +51,7 @@ func (h *Handler) ListTeams(c *gin.Context) {
 type CreateTeamRequest struct {
 	Player1ID string `json:"player1_id" binding:"required"`
 	Player2ID string `json:"player2_id" binding:"required"`
+	Category  string `json:"category" binding:"required"`
 }
 
 // CreateTeam - Manual creation with strict pool validation
@@ -76,13 +81,14 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 		return
 	}
 
-	// 3. Validate Availability: Check if players are already in a team
+	// 3. Validate Availability: Check if players are already in a team for this category
 	count, _ := h.DB.NewSelect().Model((*models.Team)(nil)).
-		Where("player1_id IN (?) OR player2_id IN (?)", bun.In([]string{req.Player1ID, req.Player2ID}), bun.In([]string{req.Player1ID, req.Player2ID})).
+		Where("(player1_id IN (?) OR player2_id IN (?))", bun.In([]string{req.Player1ID, req.Player2ID}), bun.In([]string{req.Player1ID, req.Player2ID})).
+		Where("category = ?", req.Category).
 		Count(ctx)
 	
 	if count > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "One or both players are already in a team"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "One or both players are already in a team for this category"})
 		return
 	}
 
@@ -92,6 +98,7 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 		Player2ID: p2.ID,
 		Pool:      p1.Pool, // Inherit pool
 		Name:      p1.Name + " & " + p2.Name,
+		Category:  req.Category,
 	}
 
 	if _, err := h.DB.NewInsert().Model(team).Returning("*").Exec(ctx); err != nil {
@@ -191,6 +198,7 @@ func (h *Handler) DeleteTeam(c *gin.Context) {
 // AutoPairTeamsRequest
 type AutoPairTeamsRequest struct {
 	TournamentID uuid.UUID `json:"tournament_id"`
+	Category     string    `json:"category"`
 }
 
 // AutoPairTeams - Randomly pairs available participants into teams
@@ -210,9 +218,9 @@ func (h *Handler) AutoPairTeams(c *gin.Context) {
 		return
 	}
 
-	// 2. Fetch Existing Teams to find BUSY participants
+	// 2. Fetch Existing Teams to find BUSY participants in this category
 	var existingTeams []models.Team
-	if err := h.DB.NewSelect().Model(&existingTeams).Scan(ctx); err != nil {
+	if err := h.DB.NewSelect().Model(&existingTeams).Where("category = ?", req.Category).Scan(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
 		return
 	}
@@ -251,6 +259,7 @@ func (h *Handler) AutoPairTeams(c *gin.Context) {
 				Player2ID: p2.ID,
 				Pool:      pool,
 				Name:      p1.Name + " & " + p2.Name,
+				Category:  req.Category,
 			})
 		}
 	}

@@ -4,6 +4,7 @@ import api from "../services/api";
 
 const props = defineProps({
   teams: { type: Array, required: true },
+  selectedCategory: { type: String, required: true },
 });
 
 const emit = defineEmits(["refresh"]);
@@ -79,6 +80,7 @@ const handleModalConfirm = async () => {
         pool: selectedPool.value,
         tournament_id: "00000000-0000-0000-0000-000000000000",
         team_ids: selectedTeamIds.value,
+        category: props.selectedCategory,
       });
       alert("Group created successfully!");
       selectedTeamIds.value = [];
@@ -88,6 +90,7 @@ const handleModalConfirm = async () => {
         pool: selectedPool.value,
         tournament_id: "00000000-0000-0000-0000-000000000000",
         name_prefix: prefix,
+        category: props.selectedCategory,
       });
       alert("Groups auto-generated successfully!");
     }

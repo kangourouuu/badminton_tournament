@@ -13,6 +13,7 @@ import (
 // GenerateKnockoutRequest
 type GenerateKnockoutRequest struct {
 	TournamentID uuid.UUID `json:"tournament_id"`
+	Category     string    `json:"category"`
 }
 
 func (h *Handler) GenerateKnockout(c *gin.Context) {
@@ -22,7 +23,7 @@ func (h *Handler) GenerateKnockout(c *gin.Context) {
 		return
 	}
 
-	group, err := h.EnsureKnockoutStage(c.Request.Context(), req.TournamentID)
+	group, err := h.EnsureKnockoutStage(c.Request.Context(), req.TournamentID, req.Category)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -32,20 +33,27 @@ func (h *Handler) GenerateKnockout(c *gin.Context) {
 }
 
 // EnsureKnockoutStage checks for existence and creates if missing. Returns the Group.
-func (h *Handler) EnsureKnockoutStage(ctx context.Context, tournamentID uuid.UUID) (*models.Group, error) {
-	// 1. Check if "KNOCKOUT" group already exists
+func (h *Handler) EnsureKnockoutStage(ctx context.Context, tournamentID uuid.UUID, category string) (*models.Group, error) {
+	groupName := "KNOCKOUT"
+	if category != "" {
+		groupName = "KNOCKOUT-" + category
+	}
+
+	// 1. Check if "KNOCKOUT" group already exists for this category
 	var existingGroup models.Group
 	if err := h.DB.NewSelect().Model(&existingGroup).
-		Where("tournament_id = ? AND name = ?", tournamentID, "KNOCKOUT").
+		Where("tournament_id = ? AND name = ?", tournamentID, groupName).
+		Where("category = ?", category).
 		Relation("Matches").
 		Scan(ctx); err == nil {
 		return &existingGroup, nil
 	}
 
-	// 2. Fetch all groups and their matches to determine qualifiers
+	// 2. Fetch all groups in this category and their matches to determine qualifiers
 	var groups []models.Group
 	err := h.DB.NewSelect().Model(&groups).
 		Where("tournament_id = ?", tournamentID).
+		Where("category = ?", category).
 		Relation("Matches").
 		Order("name ASC"). // Group A first, then Group B
 		Scan(ctx)
@@ -85,7 +93,8 @@ func (h *Handler) EnsureKnockoutStage(ctx context.Context, tournamentID uuid.UUI
 	// 4. Create "KNOCKOUT" Group
 	kGroup := &models.Group{
 		TournamentID: tournamentID,
-		Name:         "KNOCKOUT",
+		Name:         groupName,
+		Category:     category,
 	}
 	_, err = h.DB.NewInsert().Model(kGroup).Exec(ctx)
 	if err != nil {

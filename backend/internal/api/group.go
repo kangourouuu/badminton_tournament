@@ -18,6 +18,7 @@ type CreateGroupRequest struct {
 	Pool         string      `json:"pool"` // "Mesoneer" or "Lab"
 	TournamentID uuid.UUID   `json:"tournament_id"`
 	TeamIDs      []uuid.UUID `json:"team_ids"` // Expect exactly 4 IDs
+	Category     string      `json:"category"`
 }
 
 func (h *Handler) CreateGroup(c *gin.Context) {
@@ -63,6 +64,14 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		req.TeamIDs[i], req.TeamIDs[j] = req.TeamIDs[j], req.TeamIDs[i]
 	})
 
+	// Add Category check for the teams to ensure they belong to this Category
+	for _, team := range teams {
+		if team.Category != req.Category {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "All teams must belong to the selected Category (" + req.Category + ")"})
+			return
+		}
+	}
+
 	// Check if already in active match
 	count, err := h.DB.NewSelect().Model((*models.Match)(nil)).
 		Where("team_a_id IN (?) OR team_b_id IN (?)", bun.In(req.TeamIDs), bun.In(req.TeamIDs)).
@@ -72,7 +81,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		return
 	}
 	if count > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "One or more selected teams are already competing in another group"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "One or more selected teams are already competing in another group in this category"})
 		return
 	}
 
@@ -81,6 +90,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		TournamentID: req.TournamentID,
 		Name:         req.Name,
 		Pool:         req.Pool,
+		Category:     req.Category,
 	}
 	_, err = h.DB.NewInsert().Model(group).Returning("*").Exec(ctx)
 	if err != nil {
@@ -101,6 +111,7 @@ type AutoGenerateGroupsRequest struct {
 	Pool         string    `json:"pool"`
 	TournamentID uuid.UUID `json:"tournament_id"`
 	NamePrefix   string    `json:"name_prefix"`
+	Category     string    `json:"category"`
 }
 
 func (h *Handler) AutoGenerateGroups(c *gin.Context) {
@@ -122,6 +133,7 @@ func (h *Handler) AutoGenerateGroups(c *gin.Context) {
 	err := h.DB.NewSelect().
 		Model(&availableTeams).
 		Where("pool = ?", req.Pool).
+		Where("category = ?", req.Category).
 		Where("id NOT IN (SELECT team_a_id FROM matches WHERE team_a_id IS NOT NULL UNION SELECT team_b_id FROM matches WHERE team_b_id IS NOT NULL)").
 		Scan(ctx)
 
@@ -159,6 +171,7 @@ func (h *Handler) AutoGenerateGroups(c *gin.Context) {
 			TournamentID: req.TournamentID,
 			Name:         name,
 			Pool:         req.Pool,
+			Category:     req.Category,
 		}
 		_, err := h.DB.NewInsert().Model(group).Returning("*").Exec(ctx)
 		if err != nil {
@@ -237,17 +250,22 @@ func (h *Handler) createGSLMatches(ctx context.Context, groupID uuid.UUID, teamI
 }
 
 func (h *Handler) ListGroups(c *gin.Context) {
+	category := c.Query("category")
 	var groups []models.Group
 
-	err := h.DB.NewSelect().Model(&groups).
+	query := h.DB.NewSelect().Model(&groups).
 		Relation("Matches", func(q *bun.SelectQuery) *bun.SelectQuery {
 			return q.Order("label ASC").
 				Relation("TeamA").
 				Relation("TeamB").
 				Relation("Winner")
-		}).
-		Order("name ASC").
-		Scan(c.Request.Context())
+		})
+
+	if category != "" {
+		query.Where("category = ?", category)
+	}
+
+	err := query.Order("name ASC").Scan(c.Request.Context())
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

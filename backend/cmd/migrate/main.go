@@ -23,6 +23,9 @@ func main() {
 		ALTER TABLE teams ADD COLUMN IF NOT EXISTS pool TEXT DEFAULT '';
 		ALTER TABLE groups ADD COLUMN IF NOT EXISTS pool TEXT DEFAULT '';
 		ALTER TABLE matches ADD COLUMN IF NOT EXISTS sets_detail JSONB;
+		ALTER TABLE participants ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT '';
+		ALTER TABLE teams ADD COLUMN IF NOT EXISTS category TEXT DEFAULT '';
+		ALTER TABLE groups ADD COLUMN IF NOT EXISTS category TEXT DEFAULT '';
 	`)
 	if err != nil {
 		log.Printf("Warning: failed to alter tables: %v", err)

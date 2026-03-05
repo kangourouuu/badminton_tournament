@@ -125,18 +125,21 @@ watch(
         { a: null, b: null },
       ];
 
-      // Parse existing sets if they exist
-      if (newMatch.sets_detail && newMatch.sets_detail.sets) {
-        const loaded = newMatch.sets_detail.sets;
-        if (isGroupStage.value) {
-          groupSet.value.a = loaded[0]?.a ?? null;
-          groupSet.value.b = loaded[0]?.b ?? null;
+      // Parse existing strings if they exist. e.g. "21-19, 15-21"
+      if (newMatch.sets_detail && typeof newMatch.sets_detail === "string") {
+        const parts = newMatch.sets_detail.split(",").map((s) => s.trim());
+        if (isGroupStage.value && parts.length > 0) {
+          const s = parts[0].split("-");
+          groupSet.value.a = s[0] || null;
+          groupSet.value.b = s[1] || null;
         } else {
-          knockoutSets.value = [
-            { a: loaded[0]?.a ?? null, b: loaded[0]?.b ?? null },
-            { a: loaded[1]?.a ?? null, b: loaded[1]?.b ?? null },
-            { a: loaded[2]?.a ?? null, b: loaded[2]?.b ?? null },
-          ];
+          parts.forEach((p, idx) => {
+            if (idx < 3) {
+              const s = p.split("-");
+              knockoutSets.value[idx].a = s[0] || null;
+              knockoutSets.value[idx].b = s[1] || null;
+            }
+          });
         }
       }
     }
@@ -169,24 +172,27 @@ const save = () => {
   if (!isValid.value)
     return alert("Invalid score. Ensure winner is determined (2 sets won).");
 
-  let finalSets = [];
+  let setsDetailStr = "";
   if (isGroupStage.value) {
-    finalSets = [
-      { set: 1, a: parseInt(groupSet.value.a), b: parseInt(groupSet.value.b) },
-    ];
+    setsDetailStr = `${groupSet.value.a}-${groupSet.value.b}`;
   } else {
-    finalSets = knockoutSets.value
-      .map((s, i) => ({ set: i + 1, a: parseInt(s.a), b: parseInt(s.b) }))
-      .filter(
-        (s) => s.a !== null && s.b !== null && !isNaN(s.a) && !isNaN(s.b),
-      );
+    setsDetailStr = knockoutSets.value
+      .filter((s) => s.a !== null && s.b !== null && s.a !== "" && s.b !== "")
+      .map((s) => `${s.a}-${s.b}`)
+      .join(", ");
+  }
+
+  // Double check WinnerID is present
+  if (!winnerId.value) {
+    alert("Winner could not be determined. Check scores.");
+    return;
   }
 
   emit("save", {
     id: props.match.id,
     winner_id: winnerId.value,
     score: calculatedSummaryScore.value,
-    sets_detail: { sets: finalSets },
+    sets_detail: setsDetailStr,
     video_url: videoUrl.value,
     status: "finished",
   });

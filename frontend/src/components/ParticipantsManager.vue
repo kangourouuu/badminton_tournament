@@ -5,6 +5,7 @@ import api from "../services/api";
 const props = defineProps({
   participants: { type: Array, required: true },
   teams: { type: Array, required: true },
+  selectedCategory: { type: String, required: true },
 });
 
 onMounted(() => {
@@ -23,18 +24,28 @@ const filters = ref({
 });
 
 const showTeamModal = ref(false);
+const autoPairModal = ref(false);
 const teamForm = ref({
   player1_id: "",
   player2_id: "",
   pool: "", // Auto-detected from P1
+  category: "",
 });
 
 // -- COMPUTED --
 const isAssigned = (id) =>
-  props.teams.some((t) => t.player1_id === id || t.player2_id === id);
+  props.teams.some(
+    (t) =>
+      (t.player1_id === id || t.player2_id === id) &&
+      t.category === props.selectedCategory,
+  );
 
 const getTeamName = (id) => {
-  const t = props.teams.find((t) => t.player1_id === id || t.player2_id === id);
+  const t = props.teams.find(
+    (t) =>
+      (t.player1_id === id || t.player2_id === id) &&
+      t.category === props.selectedCategory,
+  );
   return t ? t.name : null;
 };
 
@@ -83,7 +94,12 @@ const p2Options = computed(() => {
 
 // -- ACTIONS --
 const openTeamModal = () => {
-  teamForm.value = { player1_id: "", player2_id: "", pool: "" };
+  teamForm.value = {
+    player1_id: "",
+    player2_id: "",
+    pool: "",
+    category: props.selectedCategory,
+  };
   showTeamModal.value = true;
 };
 
@@ -106,6 +122,7 @@ const createTeam = async () => {
     await api.post("/teams", {
       player1_id: teamForm.value.player1_id,
       player2_id: teamForm.value.player2_id,
+      category: teamForm.value.category,
     });
 
     showTeamModal.value = false;
@@ -128,6 +145,7 @@ const autoPairTeams = async () => {
   try {
     const res = await api.post("/teams/auto-pair", {
       tournament_id: "00000000-0000-0000-0000-000000000000",
+      category: props.selectedCategory,
     });
     alert(res.data.message);
     emit("refresh");
@@ -186,6 +204,7 @@ const autoPairTeams = async () => {
         <thead class="bg-gray-50 text-gray-500 font-medium uppercase text-xs">
           <tr>
             <th class="px-6 py-3">Name</th>
+            <th class="px-6 py-3">Gender</th>
             <th class="px-6 py-3">Partner Request</th>
             <th class="px-6 py-3">Pool</th>
             <th class="px-6 py-3">Status</th>
@@ -198,6 +217,14 @@ const autoPairTeams = async () => {
             class="hover:bg-gray-50 transition-colors"
           >
             <td class="px-6 py-3 font-medium text-gray-900">{{ p.name }}</td>
+            <td class="px-6 py-3 text-gray-500">
+              <span
+                v-if="p.gender"
+                class="text-xs uppercase bg-gray-100 px-2 py-0.5 rounded"
+                >{{ p.gender }}</span
+              >
+              <span v-else class="text-xs text-gray-300 italic">Unknown</span>
+            </td>
             <td class="px-6 py-3 text-gray-500 italic">
               {{ p.partner_request || "-" }}
             </td>
@@ -258,6 +285,16 @@ const autoPairTeams = async () => {
               <option v-for="p in p1Options" :key="p.id" :value="p.id">
                 {{ p.name }} ({{ p.pool }})
               </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >Category</label
+            >
+            <select v-model="teamForm.category" class="input-material">
+              <option value="MensDoubles">Men's Doubles</option>
+              <option value="MixedDoubles">Mixed Doubles</option>
             </select>
           </div>
 

@@ -8,6 +8,7 @@ import SeedingManager from "../components/SeedingManager.vue";
 
 const router = useRouter();
 const activeTab = ref("brackets"); // 'brackets', 'seeding', 'participants', 'rules'
+const selectedCategory = ref("MensDoubles"); // 'MensDoubles', 'MixedDoubles'
 
 // Data State
 const participants = ref([]);
@@ -25,8 +26,8 @@ const fetchData = async () => {
   try {
     const results = await Promise.allSettled([
       api.get("/participants"),
-      api.get("/teams"),
-      api.get("/groups"),
+      api.get(`/teams?category=${selectedCategory.value}`),
+      api.get(`/groups?category=${selectedCategory.value}`),
       api.get("/public/rules"),
     ]);
 
@@ -112,6 +113,7 @@ const generateKnockout = async () => {
     console.log("Calling POST /tournaments/knockout");
     await api.post("/tournaments/knockout", {
       tournament_id: "00000000-0000-0000-0000-000000000000",
+      category: selectedCategory.value,
     });
     alert("Knockout Stage Generated!");
     fetchData();
@@ -229,6 +231,40 @@ const sortMatches = (matches) => {
         </button>
       </div>
     </nav>
+
+    <!-- Category Toggle Pill -->
+    <div class="bg-white px-6 pt-4 flex justify-end">
+      <div class="inline-flex bg-gray-100 rounded-lg p-1">
+        <button
+          @click="
+            selectedCategory = 'MensDoubles';
+            fetchData();
+          "
+          :class="
+            selectedCategory === 'MensDoubles'
+              ? 'bg-white shadow text-violet-700'
+              : 'text-gray-500 hover:text-gray-700'
+          "
+          class="px-4 py-1.5 rounded-md text-sm font-bold transition-all"
+        >
+          Men's Doubles
+        </button>
+        <button
+          @click="
+            selectedCategory = 'MixedDoubles';
+            fetchData();
+          "
+          :class="
+            selectedCategory === 'MixedDoubles'
+              ? 'bg-white shadow text-violet-700'
+              : 'text-gray-500 hover:text-gray-700'
+          "
+          class="px-4 py-1.5 rounded-md text-sm font-bold transition-all"
+        >
+          Mixed Doubles
+        </button>
+      </div>
+    </div>
 
     <!-- Tabs -->
     <div class="bg-white border-b border-gray-200 px-6 py-4">
@@ -425,7 +461,11 @@ const sortMatches = (matches) => {
 
       <!-- Tab: SEEDING -->
       <div v-show="activeTab === 'seeding'" class="space-y-6">
-        <SeedingManager :teams="availableTeams" @refresh="fetchData" />
+        <SeedingManager
+          :teams="availableTeams"
+          :selectedCategory="selectedCategory"
+          @refresh="fetchData"
+        />
       </div>
 
       <!-- Tab: PARTICIPANTS -->
@@ -433,6 +473,7 @@ const sortMatches = (matches) => {
         <ParticipantsManager
           :participants="participants"
           :teams="teams"
+          :selectedCategory="selectedCategory"
           @refresh="fetchData"
         />
       </div>
