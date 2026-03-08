@@ -164,6 +164,16 @@ const isValid = computed(() => {
     if (parseInt(s1.a) === parseInt(s1.b) || parseInt(s2.a) === parseInt(s2.b))
       return false; // No individual ties
 
+    const s3 = knockoutSets.value[2];
+    if (
+      s3.a !== null &&
+      s3.b !== null &&
+      s3.a !== "" &&
+      s3.b !== "" &&
+      parseInt(s3.a) === parseInt(s3.b)
+    )
+      return false; // Set 3 tie
+
     return true;
   }
 });

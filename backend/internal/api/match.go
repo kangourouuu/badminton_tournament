@@ -11,11 +11,11 @@ import (
 )
 
 type UpdateMatchRequest struct {
-	WinnerID   uuid.UUID              `json:"winner_id"`
-	Score      string                 `json:"score"`
-	SetsDetail map[string]interface{} `json:"sets_detail"`
-	VideoURL   string                 `json:"video_url"`
-	Status     string                 `json:"status"` // "finished" or empty
+	WinnerID   uuid.UUID `json:"winner_id"`
+	Score      string    `json:"score"`
+	SetsDetail string    `json:"sets_detail"`
+	VideoURL   string    `json:"video_url"`
+	Status     string    `json:"status"` // "finished" or empty
 }
 
 func (h *Handler) GetMatch(c *gin.Context) {
@@ -173,6 +173,7 @@ func (h *Handler) propagateToMatch(ctx context.Context, targetID, teamID uuid.UU
 	}
 
 	if col != "" {
+		log.Printf("Promoting Team %s to Match %s", teamID, targetID) // Per ADMIN_FIX.md tracking requirement
 		log.Printf("[Auto-Promotion] SUCCESS: Pushed Player %s to Match ID %s (Column: %s)", teamID, target.ID, col)
 		_, err := h.DB.NewUpdate().Model(&target).Set(col+" = ?", teamID).WherePK().Exec(ctx)
 		return err
@@ -198,7 +199,7 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 			log.Printf("PROMOTION NOTICE: Knockout Stage not found. Attempting Auto-Generation...")
 			
 			// Auto-Generate
-			newKoGroup, errGen := h.EnsureKnockoutStage(ctx, group.TournamentID)
+			newKoGroup, errGen := h.EnsureKnockoutStage(ctx, group.TournamentID, group.Category)
 			if errGen != nil {
 				log.Printf("PROMOTION ERROR: Failed to auto-generate Knockout Stage: %v", errGen)
 				return errGen 

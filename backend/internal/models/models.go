@@ -70,9 +70,9 @@ type Match struct {
 	TeamBID uuid.UUID `bun:"team_b_id,type:uuid,nullzero" json:"team_b_id,omitempty"`
 
 	WinnerID uuid.UUID `bun:"winner_id,type:uuid,nullzero" json:"winner_id,omitempty"`
-	Score    string    `bun:"score" json:"score"`         // "21-19, 21-18"
-	SetsDetail map[string]interface{} `bun:"sets_detail,type:jsonb" json:"sets_detail,omitempty"`
-	VideoURL string    `bun:"video_url" json:"video_url"` // YouTube link
+	Score    string `bun:"score" json:"score"`         // "21-19, 21-18"
+	SetsDetail string `bun:"sets_detail" json:"sets_detail,omitempty"`
+	VideoURL string `bun:"video_url" json:"video_url"` // YouTube link
 
 	// Automation Linking
 	NextMatchWinID  uuid.UUID `bun:"next_match_win_id,type:uuid,nullzero" json:"next_match_win_id,omitempty"`
