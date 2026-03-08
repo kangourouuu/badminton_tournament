@@ -138,5 +138,17 @@ func CreateSchema(ctx context.Context) error {
 		}
 	}
 
+	// Auto-migrate new columns for Participant table
+	// This ensures existing databases are not broken when these fields are deployed.
+	_, err := DB.ExecContext(ctx, `
+		ALTER TABLE participants 
+		ADD COLUMN IF NOT EXISTS gender varchar,
+		ADD COLUMN IF NOT EXISTS source varchar,
+		ADD COLUMN IF NOT EXISTS status varchar;
+	`)
+	if err != nil {
+		log.Printf("Warning: Failed to auto-migrate columns for participants: %v", err)
+	}
+
 	return nil
 }

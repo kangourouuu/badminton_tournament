@@ -24,6 +24,8 @@ type Participant struct {
 	Pool      string    `bun:"pool,notnull" json:"pool"` // 'Mesoneer', 'Lab'
 	PartnerRequest string `bun:"partner_request" json:"partner_request"` // Desired Teammate
 	Gender         string `bun:"gender" json:"gender"`                   // Nullable/Empty for flexibility
+	Source         string `bun:"source" json:"source"`
+	Status         string `bun:"status" json:"status"`
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
 }
 
