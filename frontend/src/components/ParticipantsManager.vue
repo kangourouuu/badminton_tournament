@@ -44,12 +44,14 @@ const getStatusInCurrentCategory = (id) => isAssigned(id, props.selectedCategory
 
 const isMale = (p) => {
   const g = (p.gender || "").trim().toLowerCase();
-  return g === "male" || g === "man" || g === "m";
+  // Support English and Vietnamese common terms
+  return g === "male" || g === "man" || g === "m" || g === "nam";
 };
 
 const isFemale = (p) => {
   const g = (p.gender || "").trim().toLowerCase();
-  return g === "female" || g === "woman" || g === "f" || g === "w";
+  // Support English and Vietnamese common terms
+  return g === "female" || g === "woman" || g === "f" || g === "w" || g === "nữ" || g === "nu";
 };
 
 const getTeamName = (id) => {
@@ -96,11 +98,18 @@ const freeParticipantsForModal = computed(() => {
 
 const p1Options = computed(() => {
   const cat = teamForm.value.category || props.selectedCategory;
+  const free = freeParticipantsForModal.value;
+  
   if (cat === "MensDoubles") {
-    return freeParticipantsForModal.value.filter((p) => isMale(p));
+    const list = free.filter((p) => isMale(p));
+    if (list.length === 0 && free.length > 0) {
+      // Fallback: Show all but warn
+      return free.map(p => ({ ...p, name: `${p.name} (Gender: ${p.gender || '?'})` }));
+    }
+    return list;
   }
   // MixedDoubles: anyone free can be P1
-  return freeParticipantsForModal.value;
+  return free;
 });
 
 const p2Options = computed(() => {
@@ -117,14 +126,24 @@ const p2Options = computed(() => {
 
   if (cat === "MensDoubles") {
     // Only Male
-    return candidates.filter((p) => isMale(p));
+    const list = candidates.filter((p) => isMale(p));
+    if (list.length === 0 && candidates.length > 0) {
+       return candidates.map(p => ({ ...p, name: `${p.name} (Gender: ${p.gender || '?'})` }));
+    }
+    return list;
   } else if (cat === "MixedDoubles") {
     // Must be opposite gender of P1
+    let list = [];
     if (isMale(p1)) {
-      return candidates.filter((p) => isFemale(p));
+      list = candidates.filter((p) => isFemale(p));
     } else {
-      return candidates.filter((p) => isMale(p));
+      list = candidates.filter((p) => isMale(p));
     }
+    
+    if (list.length === 0 && candidates.length > 0) {
+       return candidates.map(p => ({ ...p, name: `${p.name} (Gender: ${p.gender || '?'})` }));
+    }
+    return list;
   }
 
   return candidates;

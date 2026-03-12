@@ -77,13 +77,23 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 	}
 
 	// 3. Validate Gender based on Category
+	isMale := func(g string) bool {
+		g = strings.TrimSpace(strings.ToLower(g))
+		return g == "male" || g == "man" || g == "m" || g == "nam"
+	}
+	isFemale := func(g string) bool {
+		g = strings.TrimSpace(strings.ToLower(g))
+		return g == "female" || g == "woman" || g == "f" || g == "w" || g == "nữ" || g == "nu"
+	}
+
 	if req.Category == "MensDoubles" {
-		if !strings.EqualFold(strings.TrimSpace(p1.Gender), "Male") || !strings.EqualFold(strings.TrimSpace(p2.Gender), "Male") {
+		if !isMale(p1.Gender) || !isMale(p2.Gender) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires both players to be Male"})
 			return
 		}
 	} else if req.Category == "MixedDoubles" {
-		if strings.EqualFold(strings.TrimSpace(p1.Gender), strings.TrimSpace(p2.Gender)) {
+		// Must be opposite genders
+		if (isMale(p1.Gender) && isMale(p2.Gender)) || (isFemale(p1.Gender) && isFemale(p2.Gender)) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Mixed Doubles requires one Male and one Female player"})
 			return
 		}
@@ -148,7 +158,7 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 				return
 			}
 			// Category Validation for P1
-			if team.Category == "MensDoubles" && !strings.EqualFold(strings.TrimSpace(p.Gender), "Male") {
+			if team.Category == "MensDoubles" && !isMale(p.Gender) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires Male players"})
 				return
 			}
@@ -165,7 +175,7 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 				return
 			}
 			// Category Validation for P2
-			if team.Category == "MensDoubles" && !strings.EqualFold(strings.TrimSpace(p.Gender), "Male") {
+			if team.Category == "MensDoubles" && !isMale(p.Gender) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires Male players"})
 				return
 			}
@@ -178,7 +188,7 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 		var p1, p2 models.Participant
 		h.DB.NewSelect().Model(&p1).Where("id = ?", team.Player1ID).Scan(ctx)
 		h.DB.NewSelect().Model(&p2).Where("id = ?", team.Player2ID).Scan(ctx)
-		if strings.EqualFold(strings.TrimSpace(p1.Gender), strings.TrimSpace(p2.Gender)) {
+		if (isMale(p1.Gender) && isMale(p2.Gender)) || (isFemale(p1.Gender) && isFemale(p2.Gender)) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Mixed Doubles requires one Male and one Female player"})
 			return
 		}
@@ -271,9 +281,9 @@ func (h *Handler) AutoPairTeams(c *gin.Context) {
 			if _, ok := freeByPool[p.Pool]; !ok {
 				freeByPool[p.Pool] = &poolGender{}
 			}
-			if strings.EqualFold(strings.TrimSpace(p.Gender), "Male") {
+			if isMale(p.Gender) {
 				freeByPool[p.Pool].freeMales = append(freeByPool[p.Pool].freeMales, p)
-			} else if strings.EqualFold(strings.TrimSpace(p.Gender), "Female") {
+			} else if isFemale(p.Gender) {
 				freeByPool[p.Pool].freeFemales = append(freeByPool[p.Pool].freeFemales, p)
 			}
 		}
