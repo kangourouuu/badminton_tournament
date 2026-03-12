@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"badminton_tournament/backend/internal/models"
+	"strings"
 )
 
 
@@ -77,12 +78,12 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 
 	// 3. Validate Gender based on Category
 	if req.Category == "MensDoubles" {
-		if p1.Gender != "Male" || p2.Gender != "Male" {
+		if !strings.EqualFold(p1.Gender, "Male") || !strings.EqualFold(p2.Gender, "Male") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires both players to be Male"})
 			return
 		}
 	} else if req.Category == "MixedDoubles" {
-		if p1.Gender == p2.Gender {
+		if strings.EqualFold(p1.Gender, p2.Gender) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Mixed Doubles requires one Male and one Female player"})
 			return
 		}
@@ -147,7 +148,7 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 				return
 			}
 			// Category Validation for P1
-			if team.Category == "MensDoubles" && p.Gender != "Male" {
+			if team.Category == "MensDoubles" && !strings.EqualFold(p.Gender, "Male") {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires Male players"})
 				return
 			}
@@ -164,7 +165,7 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 				return
 			}
 			// Category Validation for P2
-			if team.Category == "MensDoubles" && p.Gender != "Male" {
+			if team.Category == "MensDoubles" && !strings.EqualFold(p.Gender, "Male") {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires Male players"})
 				return
 			}
@@ -177,7 +178,7 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 		var p1, p2 models.Participant
 		h.DB.NewSelect().Model(&p1).Where("id = ?", team.Player1ID).Scan(ctx)
 		h.DB.NewSelect().Model(&p2).Where("id = ?", team.Player2ID).Scan(ctx)
-		if p1.Gender == p2.Gender {
+		if strings.EqualFold(p1.Gender, p2.Gender) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Mixed Doubles requires one Male and one Female player"})
 			return
 		}
@@ -270,9 +271,9 @@ func (h *Handler) AutoPairTeams(c *gin.Context) {
 			if _, ok := freeByPool[p.Pool]; !ok {
 				freeByPool[p.Pool] = &poolGender{}
 			}
-			if p.Gender == "Male" {
+			if strings.EqualFold(p.Gender, "Male") {
 				freeByPool[p.Pool].freeMales = append(freeByPool[p.Pool].freeMales, p)
-			} else if p.Gender == "Female" {
+			} else if strings.EqualFold(p.Gender, "Female") {
 				freeByPool[p.Pool].freeFemales = append(freeByPool[p.Pool].freeFemales, p)
 			}
 		}

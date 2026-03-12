@@ -33,12 +33,14 @@ const teamForm = ref({
 });
 
 // -- COMPUTED --
-const isAssigned = (id) =>
+const isAssigned = (id, cat = props.selectedCategory) =>
   props.teams.some(
     (t) =>
       (t.player1_id === id || t.player2_id === id) &&
-      t.category === props.selectedCategory,
+      t.category === cat,
   );
+
+const getStatusInCurrentCategory = (id) => isAssigned(id, props.selectedCategory);
 
 const getTeamName = (id) => {
   const t = props.teams.find(
@@ -65,7 +67,7 @@ const filteredParticipants = computed(() => {
       filters.value.pool === "ALL" || p.pool === filters.value.pool;
 
     // 3. Status
-    const pAssigned = isAssigned(p.id);
+    const pAssigned = getStatusInCurrentCategory(p.id);
     const matchStatus =
       filters.value.status === "ALL" ||
       (filters.value.status === "FREE" && !pAssigned) ||
@@ -76,16 +78,18 @@ const filteredParticipants = computed(() => {
 });
 
 // For Team Builder Modal
-const freeParticipants = computed(() => {
-  return props.participants.filter((p) => !isAssigned(p.id));
+const freeParticipantsForModal = computed(() => {
+  const cat = teamForm.value.category || props.selectedCategory;
+  return props.participants.filter((p) => !isAssigned(p.id, cat));
 });
 
 const p1Options = computed(() => {
-  if (teamForm.value.category === "MensDoubles") {
-    return freeParticipants.value.filter((p) => p.gender === "Male");
+  const cat = teamForm.value.category || props.selectedCategory;
+  if (cat === "MensDoubles") {
+    return freeParticipantsForModal.value.filter((p) => p.gender?.toLowerCase() === "male");
   }
   // MixedDoubles: anyone free can be P1
-  return freeParticipants.value;
+  return freeParticipantsForModal.value;
 });
 
 const p2Options = computed(() => {
@@ -93,17 +97,19 @@ const p2Options = computed(() => {
   const p1 = props.participants.find((p) => p.id === teamForm.value.player1_id);
   if (!p1) return [];
 
+  const cat = teamForm.value.category || props.selectedCategory;
+
   // Must be same pool as P1
-  let candidates = freeParticipants.value.filter(
+  let candidates = freeParticipantsForModal.value.filter(
     (p) => p.id !== p1.id && p.pool === p1.pool,
   );
 
-  if (teamForm.value.category === "MensDoubles") {
+  if (cat === "MensDoubles") {
     // Only Male
-    return candidates.filter((p) => p.gender === "Male");
-  } else if (teamForm.value.category === "MixedDoubles") {
+    return candidates.filter((p) => p.gender?.toLowerCase() === "male");
+  } else if (cat === "MixedDoubles") {
     // Must be opposite gender
-    return candidates.filter((p) => p.gender !== p1.gender);
+    return candidates.filter((p) => p.gender?.toLowerCase() !== p1.gender?.toLowerCase());
   }
 
   return candidates;
