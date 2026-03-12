@@ -42,6 +42,16 @@ const isAssigned = (id, cat = props.selectedCategory) =>
 
 const getStatusInCurrentCategory = (id) => isAssigned(id, props.selectedCategory);
 
+const isMale = (p) => {
+  const g = (p.gender || "").trim().toLowerCase();
+  return g === "male" || g === "man" || g === "m";
+};
+
+const isFemale = (p) => {
+  const g = (p.gender || "").trim().toLowerCase();
+  return g === "female" || g === "woman" || g === "f" || g === "w";
+};
+
 const getTeamName = (id) => {
   const t = props.teams.find(
     (t) =>
@@ -80,13 +90,14 @@ const filteredParticipants = computed(() => {
 // For Team Builder Modal
 const freeParticipantsForModal = computed(() => {
   const cat = teamForm.value.category || props.selectedCategory;
+  // A participant is "free" if they are not assigned to a team IN THE CATEGORY WE ARE EDITING
   return props.participants.filter((p) => !isAssigned(p.id, cat));
 });
 
 const p1Options = computed(() => {
   const cat = teamForm.value.category || props.selectedCategory;
   if (cat === "MensDoubles") {
-    return freeParticipantsForModal.value.filter((p) => p.gender?.toLowerCase() === "male");
+    return freeParticipantsForModal.value.filter((p) => isMale(p));
   }
   // MixedDoubles: anyone free can be P1
   return freeParticipantsForModal.value;
@@ -106,10 +117,14 @@ const p2Options = computed(() => {
 
   if (cat === "MensDoubles") {
     // Only Male
-    return candidates.filter((p) => p.gender?.toLowerCase() === "male");
+    return candidates.filter((p) => isMale(p));
   } else if (cat === "MixedDoubles") {
-    // Must be opposite gender
-    return candidates.filter((p) => p.gender?.toLowerCase() !== p1.gender?.toLowerCase());
+    // Must be opposite gender of P1
+    if (isMale(p1)) {
+      return candidates.filter((p) => isFemale(p));
+    } else {
+      return candidates.filter((p) => isMale(p));
+    }
   }
 
   return candidates;

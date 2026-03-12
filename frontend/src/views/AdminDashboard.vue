@@ -26,7 +26,7 @@ const fetchData = async () => {
   try {
     const results = await Promise.allSettled([
       api.get("/participants"),
-      api.get(`/teams?category=${selectedCategory.value}`),
+      api.get("/teams"), // Fetch ALL teams for cross-category awareness
       api.get(`/groups?category=${selectedCategory.value}`),
       api.get("/public/rules"),
     ]);
@@ -38,7 +38,7 @@ const fetchData = async () => {
       console.error("Failed to load participants", results[0].reason);
     }
 
-    // 1: Teams
+    // 1: Teams (Full List)
     if (results[1].status === "fulfilled") {
       teams.value = results[1].value.data || [];
     } else {
@@ -60,17 +60,20 @@ const fetchData = async () => {
     }
   } catch (err) {
     console.error("Critical Fetch error", err);
-    if (err.response?.status === 401) {
-      router.push("/login"); // Handle global auth error if needed
-    }
   } finally {
     loading.value = false;
   }
 };
 
 // -- COMPUTED --
+// Teams filtered for the current dashboard view (Matches/Groups)
+const dashboardTeams = computed(() => {
+  return teams.value.filter(t => t.category === selectedCategory.value);
+});
+
 const availableTeams = computed(() => {
-  if (!teams.value.length) return [];
+  const currentTeams = dashboardTeams.value;
+  if (!currentTeams.length) return [];
   const assignedTeamIds = new Set();
 
   groups.value.forEach((g) => {
@@ -82,7 +85,7 @@ const availableTeams = computed(() => {
     }
   });
 
-  return teams.value.filter((t) => !assignedTeamIds.has(t.id));
+  return currentTeams.filter((t) => !assignedTeamIds.has(t.id));
 });
 
 onMounted(fetchData);
