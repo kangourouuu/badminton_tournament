@@ -11,6 +11,16 @@ import (
 	"badminton_tournament/backend/internal/models"
 	"strings"
 )
+ 
+ func isMale(g string) bool {
+	g = strings.TrimSpace(strings.ToLower(g))
+	return g == "male" || g == "man" || g == "m" || g == "nam"
+}
+
+func isFemale(g string) bool {
+	g = strings.TrimSpace(strings.ToLower(g))
+	return g == "female" || g == "woman" || g == "f" || g == "w" || g == "nữ" || g == "nu"
+}
 
 
 
@@ -77,14 +87,6 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 	}
 
 	// 3. Validate Gender based on Category
-	isMale := func(g string) bool {
-		g = strings.TrimSpace(strings.ToLower(g))
-		return g == "male" || g == "man" || g == "m" || g == "nam"
-	}
-	isFemale := func(g string) bool {
-		g = strings.TrimSpace(strings.ToLower(g))
-		return g == "female" || g == "woman" || g == "f" || g == "w" || g == "nữ" || g == "nu"
-	}
 
 	if req.Category == "MensDoubles" {
 		if !isMale(p1.Gender) || !isMale(p2.Gender) {
