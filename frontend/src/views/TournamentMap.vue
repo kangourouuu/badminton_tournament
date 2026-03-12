@@ -166,7 +166,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-else class="relative flex justify-between gap-40 min-w-[2000px]">
+      <div v-if="!loading" class="relative flex justify-between gap-40 min-w-[2000px]">
         <!-- Column: Session A -->
         <div class="flex flex-col gap-32 z-10 justify-center">
           <div
