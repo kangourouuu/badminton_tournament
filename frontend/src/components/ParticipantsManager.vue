@@ -80,16 +80,33 @@ const freeParticipants = computed(() => {
   return props.participants.filter((p) => !isAssigned(p.id));
 });
 
-const p1Options = computed(() => freeParticipants.value);
+const p1Options = computed(() => {
+  if (teamForm.value.category === "MensDoubles") {
+    return freeParticipants.value.filter((p) => p.gender === "Male");
+  }
+  // MixedDoubles: anyone free can be P1
+  return freeParticipants.value;
+});
 
 const p2Options = computed(() => {
   if (!teamForm.value.player1_id) return [];
   const p1 = props.participants.find((p) => p.id === teamForm.value.player1_id);
   if (!p1) return [];
+
   // Must be same pool as P1
-  return freeParticipants.value.filter(
+  let candidates = freeParticipants.value.filter(
     (p) => p.id !== p1.id && p.pool === p1.pool,
   );
+
+  if (teamForm.value.category === "MensDoubles") {
+    // Only Male
+    return candidates.filter((p) => p.gender === "Male");
+  } else if (teamForm.value.category === "MixedDoubles") {
+    // Must be opposite gender
+    return candidates.filter((p) => p.gender !== p1.gender);
+  }
+
+  return candidates;
 });
 
 // -- ACTIONS --
@@ -283,7 +300,7 @@ const autoPairTeams = async () => {
             >
               <option value="" disabled>Select Player 1</option>
               <option v-for="p in p1Options" :key="p.id" :value="p.id">
-                {{ p.name }} ({{ p.pool }})
+                {{ p.name }} ({{ p.gender || '?' }}) - {{ p.pool }}
               </option>
             </select>
           </div>
@@ -292,7 +309,7 @@ const autoPairTeams = async () => {
             <label class="block text-sm font-medium text-gray-700 mb-1"
               >Category</label
             >
-            <select v-model="teamForm.category" class="input-material">
+            <select v-model="teamForm.category" class="input-material" @change="teamForm.player1_id = ''; teamForm.player2_id = ''">
               <option value="MensDoubles">Men's Doubles</option>
               <option value="MixedDoubles">Mixed Doubles</option>
             </select>
@@ -309,7 +326,7 @@ const autoPairTeams = async () => {
             >
               <option value="" disabled>Select Player 2</option>
               <option v-for="p in p2Options" :key="p.id" :value="p.id">
-                {{ p.name }}
+                {{ p.name }} ({{ p.gender || '?' }})
               </option>
             </select>
           </div>

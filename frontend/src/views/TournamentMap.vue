@@ -15,6 +15,7 @@ const loading = ref(true);
 const zoom = ref(0.7);
 const selectedMatch = ref(null);
 const isModalOpen = ref(false);
+const selectedCategory = ref("MensDoubles");
 
 const mesoneerGroups = computed(() =>
   groups.value.filter((g) => g.pool === "Mesoneer" && g.name !== "KNOCKOUT"),
@@ -62,8 +63,9 @@ const bronze = computed(
 );
 
 const fetchData = async () => {
+  loading.value = true;
   try {
-    const response = await api.get("/groups");
+    const response = await api.get(`/groups?category=${selectedCategory.value}`);
     groups.value = response.data || [];
   } catch (err) {
     console.error("Failed to fetch data", err);
@@ -71,6 +73,10 @@ const fetchData = async () => {
     loading.value = false;
   }
 };
+
+watch(selectedCategory, () => {
+  fetchData();
+});
 
 const isMatchDetailsOpen = ref(false);
 const selectedMatchDetails = ref(null);
@@ -137,7 +143,27 @@ onMounted(() => {
         v-if="loading"
         class="text-center py-40 animate-pulse text-xs font-black tracking-[0.5em] text-gray-300 uppercase"
       >
-        Initializing Tournament Grid
+      Initializing Tournament Grid
+      </div>
+
+      <!-- Category Toggle Tabs -->
+      <div v-show="!loading" class="fixed top-24 left-1/2 -translate-x-1/2 z-[60] flex justify-center w-full max-w-xl px-4">
+        <div class="bg-white/90 backdrop-blur-md border border-violet-100 p-1.5 rounded-2xl shadow-lg flex w-full">
+          <button
+            @click="selectedCategory = 'MensDoubles'"
+            :class="selectedCategory === 'MensDoubles' ? 'bg-violet-600 text-white shadow-lg' : 'text-gray-500 hover:text-violet-600'"
+            class="flex-1 px-8 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all duration-300"
+          >
+            Men's Doubles
+          </button>
+          <button
+            @click="selectedCategory = 'MixedDoubles'"
+            :class="selectedCategory === 'MixedDoubles' ? 'bg-violet-600 text-white shadow-lg' : 'text-gray-500 hover:text-violet-600'"
+            class="flex-1 px-8 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all duration-300"
+          >
+            Mixed Doubles
+          </button>
+        </div>
       </div>
 
       <div v-else class="relative flex justify-between gap-40 min-w-[2000px]">

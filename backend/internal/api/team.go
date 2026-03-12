@@ -75,13 +75,20 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 		return
 	}
 
-	// 2. Validate Pool
-	if p1.Pool != p2.Pool {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Players must be from the same pool"})
-		return
+	// 3. Validate Gender based on Category
+	if req.Category == "MensDoubles" {
+		if p1.Gender != "Male" || p2.Gender != "Male" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires both players to be Male"})
+			return
+		}
+	} else if req.Category == "MixedDoubles" {
+		if p1.Gender == p2.Gender {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Mixed Doubles requires one Male and one Female player"})
+			return
+		}
 	}
 
-	// 3. Validate Availability: Check if players are already in a team for this category
+	// 4. Validate Availability: Check if players are already in a team for this category
 	count, _ := h.DB.NewSelect().Model((*models.Team)(nil)).
 		Where("(player1_id IN (?) OR player2_id IN (?))", bun.In([]string{req.Player1ID, req.Player2ID}), bun.In([]string{req.Player1ID, req.Player2ID})).
 		Where("category = ?", req.Category).
@@ -92,7 +99,7 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 		return
 	}
 
-	// 4. Create Team
+	// 5. Create Team
 	team := &models.Team{
 		Player1ID: p1.ID,
 		Player2ID: p2.ID,
@@ -139,6 +146,11 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "New Player 1 is from wrong pool"})
 				return
 			}
+			// Category Validation for P1
+			if team.Category == "MensDoubles" && p.Gender != "Male" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires Male players"})
+				return
+			}
 			team.Player1ID = p.ID
 		}
 	}
@@ -151,7 +163,23 @@ func (h *Handler) UpdateTeam(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "New Player 2 is from wrong pool"})
 				return
 			}
+			// Category Validation for P2
+			if team.Category == "MensDoubles" && p.Gender != "Male" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Men's Doubles requires Male players"})
+				return
+			}
 			team.Player2ID = p.ID
+		}
+	}
+
+	// Mixed Doubles Cross-Validation if either changed
+	if team.Category == "MixedDoubles" {
+		var p1, p2 models.Participant
+		h.DB.NewSelect().Model(&p1).Where("id = ?", team.Player1ID).Scan(ctx)
+		h.DB.NewSelect().Model(&p2).Where("id = ?", team.Player2ID).Scan(ctx)
+		if p1.Gender == p2.Gender {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Mixed Doubles requires one Male and one Female player"})
+			return
 		}
 	}
 
@@ -231,36 +259,70 @@ func (h *Handler) AutoPairTeams(c *gin.Context) {
 		busyMap[t.Player2ID] = true
 	}
 
-	// 3. Group Free Participants by Pool
-	freeByPool := make(map[string][]models.Participant)
+	// 3. Group Free Participants by Pool and Gender
+	type poolGender struct {
+		freeMales   []models.Participant
+		freeFemales []models.Participant
+	}
+	freeByPool := make(map[string]*poolGender)
 	for _, p := range participants {
 		if !busyMap[p.ID] {
-			freeByPool[p.Pool] = append(freeByPool[p.Pool], p)
+			if _, ok := freeByPool[p.Pool]; !ok {
+				freeByPool[p.Pool] = &poolGender{}
+			}
+			if p.Gender == "Male" {
+				freeByPool[p.Pool].freeMales = append(freeByPool[p.Pool].freeMales, p)
+			} else if p.Gender == "Female" {
+				freeByPool[p.Pool].freeFemales = append(freeByPool[p.Pool].freeFemales, p)
+			}
 		}
 	}
 
-	// 4. Randomly Pair
+	// 4. Pair Based on Category
 	rand.Seed(time.Now().UnixNano())
 	var newTeams []models.Team
 
-	for pool, players := range freeByPool {
-		// Shuffle
-		rand.Shuffle(len(players), func(i, j int) {
-			players[i], players[j] = players[j], players[i]
-		})
-
-		// Pair
-		for i := 0; i < len(players)-1; i += 2 {
-			p1 := players[i]
-			p2 := players[i+1]
-
-			newTeams = append(newTeams, models.Team{
-				Player1ID: p1.ID,
-				Player2ID: p2.ID,
-				Pool:      pool,
-				Name:      p1.Name + " & " + p2.Name,
-				Category:  req.Category,
+	for pool, data := range freeByPool {
+		if req.Category == "MensDoubles" {
+			// Only pair males
+			males := data.freeMales
+			rand.Shuffle(len(males), func(i, j int) {
+				males[i], males[j] = males[j], males[i]
 			})
+			for i := 0; i < len(males)-1; i += 2 {
+				newTeams = append(newTeams, models.Team{
+					Player1ID: males[i].ID,
+					Player2ID: males[i+1].ID,
+					Pool:      pool,
+					Name:      males[i].Name + " & " + males[i+1].Name,
+					Category:  req.Category,
+				})
+			}
+		} else if req.Category == "MixedDoubles" {
+			// Pair 1 Male + 1 Female
+			males := data.freeMales
+			females := data.freeFemales
+			rand.Shuffle(len(males), func(i, j int) {
+				males[i], males[j] = males[j], males[i]
+			})
+			rand.Shuffle(len(females), func(i, j int) {
+				females[i], females[j] = females[j], females[i]
+			})
+
+			// Pair up as much as possible
+			limit := len(males)
+			if len(females) < limit {
+				limit = len(females)
+			}
+			for i := 0; i < limit; i++ {
+				newTeams = append(newTeams, models.Team{
+					Player1ID: males[i].ID,
+					Player2ID: females[i].ID,
+					Pool:      pool,
+					Name:      males[i].Name + " & " + females[i].Name,
+					Category:  req.Category,
+				})
+			}
 		}
 	}
 

@@ -193,20 +193,21 @@ func (h *Handler) promoteToKnockout(ctx context.Context, groupID uuid.UUID, rank
 
 	// 2. Find Knockout Group (or Auto-Generate)
 	var koGroup models.Group
-	if err := h.DB.NewSelect().Model(&koGroup).Where("name = ?", "KNOCKOUT").Relation("Matches").Scan(ctx); err != nil {
-		// Try looser search
-		if err2 := h.DB.NewSelect().Model(&koGroup).Where("name ILIKE ?", "knockout%").Relation("Matches").Scan(ctx); err2 != nil {
-			log.Printf("PROMOTION NOTICE: Knockout Stage not found. Attempting Auto-Generation...")
-			
-			// Auto-Generate
-			newKoGroup, errGen := h.EnsureKnockoutStage(ctx, group.TournamentID, group.Category)
-			if errGen != nil {
-				log.Printf("PROMOTION ERROR: Failed to auto-generate Knockout Stage: %v", errGen)
-				return errGen 
-			}
-			koGroup = *newKoGroup
-			log.Printf("PROMOTION SUCCESS: Auto-Generated Knockout Stage (ID: %s)", koGroup.ID)
+	groupName := "KNOCKOUT-" + group.Category
+	if err := h.DB.NewSelect().Model(&koGroup).
+		Where("name = ? AND category = ?", groupName, group.Category).
+		Relation("Matches").
+		Scan(ctx); err != nil {
+		log.Printf("PROMOTION NOTICE: Knockout Stage '%s' not found. Attempting Auto-Generation...", groupName)
+		
+		// Auto-Generate
+		newKoGroup, errGen := h.EnsureKnockoutStage(ctx, group.TournamentID, group.Category)
+		if errGen != nil {
+			log.Printf("PROMOTION ERROR: Failed to auto-generate Knockout Stage: %v", errGen)
+			return errGen 
 		}
+		koGroup = *newKoGroup
+		log.Printf("PROMOTION SUCCESS: Auto-Generated Knockout Stage (ID: %s)", koGroup.ID)
 	}
 	log.Printf("DEBUG: Found Knockout Group %v with %d matches", koGroup.ID, len(koGroup.Matches))
 	for _, m := range koGroup.Matches {
