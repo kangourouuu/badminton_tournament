@@ -63,16 +63,33 @@ const getTeamName = (id) => {
   return t ? t.name : null;
 };
 
+// Robust helper to handle both native Arrays and raw DB Strings (JSON, PG Text array, or simple CSV)
+const parseDbArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      let clean = val;
+      if (clean.startsWith('{') && clean.endsWith('}')) {
+        clean = clean.slice(1, -1); // Remove Postgres array braces
+      }
+      return clean.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+};
+
 const filteredParticipants = computed(() => {
   return props.participants.filter((p) => {
     // 1. Search
     const matchSearch =
       !filters.value.search ||
       p.name.toLowerCase().includes(filters.value.search.toLowerCase()) ||
-      (p.partner_request &&
-        p.partner_request
-          .toLowerCase()
-          .includes(filters.value.search.toLowerCase()));
+      parseDbArray(p.categories).join(' ').toLowerCase().includes(filters.value.search.toLowerCase()) ||
+      parseDbArray(p.available_dates).join(' ').toLowerCase().includes(filters.value.search.toLowerCase());
 
     // 2. Pool
     const matchPool =
@@ -262,7 +279,8 @@ const autoPairTeams = async () => {
           <tr>
             <th class="px-6 py-3">Name</th>
             <th class="px-6 py-3">Gender</th>
-            <th class="px-6 py-3">Partner Request</th>
+            <th class="px-6 py-3">Categories</th>
+            <th class="px-6 py-3">Available Dates</th>
             <th class="px-6 py-3">Pool</th>
             <th class="px-6 py-3">Status</th>
           </tr>
@@ -282,8 +300,11 @@ const autoPairTeams = async () => {
               >
               <span v-else class="text-xs text-gray-300 italic">Unknown</span>
             </td>
-            <td class="px-6 py-3 text-gray-500 italic">
-              {{ p.partner_request || "-" }}
+            <td class="px-6 py-3 text-gray-500">
+              {{ parseDbArray(p.categories).length ? parseDbArray(p.categories).join(', ') : '-' }}
+            </td>
+            <td class="px-6 py-3 text-gray-500">
+              {{ parseDbArray(p.available_dates).length ? parseDbArray(p.available_dates).join(', ') : '-' }}
             </td>
             <td class="px-6 py-3">
               <span

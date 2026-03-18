@@ -10,14 +10,15 @@ import (
 // Webhook for Google Form
 // Expected format from Google Script
 // Webhook for Google Form
-// Updated format: { "name": "...", "group": "...", "partner_request": "..." }
+// Updated format: { "name": "...", "group": "...", "categories": ["..."], "available_dates": ["..."] }
 type GoogleFormRequest struct {
-	Name           string `json:"name"`
-	Group          string `json:"group"`           // Maps to Pool
-	PartnerRequest string `json:"partner_request"` // Desired Teammate
-	Gender         string `json:"gender"`
-	Source         string `json:"source"`
-	Status         string `json:"status"`
+	Name           string   `json:"name"`
+	Group          string   `json:"group"` // Maps to Pool
+	Categories     []string `json:"categories"`
+	AvailableDates []string `json:"available_dates"`
+	Gender         string   `json:"gender"`
+	Source         string   `json:"source"`
+	Status         string   `json:"status"`
 }
 
 func (h *Handler) HandleFormWebhook(c *gin.Context) {
@@ -32,17 +33,19 @@ func (h *Handler) HandleFormWebhook(c *gin.Context) {
 	participant := &models.Participant{
 		Name:           req.Name,
 		Pool:           req.Group, // Google Form "group" -> DB "pool"
-		PartnerRequest: req.PartnerRequest,
+		Categories:     req.Categories,
+		AvailableDates: req.AvailableDates,
 		Gender:         req.Gender,
 		Source:         req.Source,
 		Status:         req.Status,
 	}
 
-	// Upsert: On conflict name, update pool/partner_request
+	// Upsert: On conflict name, update pool/categories/available_dates
 	_, err := h.DB.NewInsert().Model(participant).
 		On("CONFLICT (name) DO UPDATE").
 		Set("pool = EXCLUDED.pool").
-		Set("partner_request = EXCLUDED.partner_request").
+		Set("categories = EXCLUDED.categories").
+		Set("available_dates = EXCLUDED.available_dates").
 		Set("gender = EXCLUDED.gender").
 		Set("source = EXCLUDED.source").
 		Set("status = EXCLUDED.status").

@@ -144,7 +144,11 @@ func CreateSchema(ctx context.Context) error {
 		ALTER TABLE participants 
 		ADD COLUMN IF NOT EXISTS gender varchar,
 		ADD COLUMN IF NOT EXISTS source varchar,
-		ADD COLUMN IF NOT EXISTS status varchar;
+		ADD COLUMN IF NOT EXISTS status varchar,
+		ADD COLUMN IF NOT EXISTS categories varchar[],
+		ADD COLUMN IF NOT EXISTS available_dates varchar[];
+		
+		ALTER TABLE participants DROP COLUMN IF EXISTS partner_request;
 	`)
 	if err != nil {
 		log.Printf("Warning: Failed to auto-migrate columns for participants: %v", err)
